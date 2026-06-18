@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const navLinks = [
     { label: "Home", path: "/" },
@@ -25,13 +25,14 @@ const navLinks = [
 const primaryLinks = navLinks.slice(0, 6);
 const moreLinks = navLinks.slice(6);
 
-const mobileMenuVariants = {
+const mobileMenuVariants: Variants = {
     hidden: {
         opacity: 0,
         height: 0,
         transition: {
             duration: 0.2,
-            ease: "easeInOut"
+            ease: "easeInOut",
+            when: "afterChildren"
         }
     },
     visible: {
@@ -39,12 +40,14 @@ const mobileMenuVariants = {
         height: "auto",
         transition: {
             duration: 0.3,
-            ease: "easeInOut"
+            ease: "easeInOut",
+            staggerChildren: 0.05,
+            delayChildren: 0.1
         }
     }
 };
 
-const dropdownVariants = {
+const dropdownVariants: Variants = {
     hidden: {
         opacity: 0,
         y: -10,
@@ -65,17 +68,28 @@ const dropdownVariants = {
     }
 };
 
-const mobileLinkVariants = {
+const mobileLinkVariants: Variants = {
     hidden: { opacity: 0, x: -20 },
-    visible: (i: number) => ({
+    visible: {
         opacity: 1,
         x: 0,
         transition: {
-            delay: i * 0.05,
             duration: 0.2,
             ease: "easeOut"
         }
-    })
+    }
+};
+
+const mobileButtonVariants: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.2,
+            ease: "easeOut"
+        }
+    }
 };
 
 export default function Navbar() {
@@ -237,12 +251,9 @@ export default function Navbar() {
                         className="lg:hidden border-t border-border/50 bg-white/98 backdrop-blur-xl shadow-xl overflow-hidden"
                     >
                         <div className="px-4 py-4 space-y-0.5 max-h-[calc(100vh-4rem)] overflow-y-auto">
-                            {navLinks.map((link, index) => (
+                            {navLinks.map((link) => (
                                 <motion.div
                                     key={link.path}
-                                    custom={index}
-                                    initial="hidden"
-                                    animate="visible"
                                     variants={mobileLinkVariants}
                                 >
                                     <Link
@@ -259,9 +270,7 @@ export default function Navbar() {
                             ))}
                             <motion.div
                                 className="pt-3 pb-1"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
+                                variants={mobileButtonVariants}
                             >
                                 <Link href="/join">
                                     <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
