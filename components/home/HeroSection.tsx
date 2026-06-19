@@ -126,14 +126,12 @@ export default function HeroSection() {
                 </div>
             </div>
 
-            {/* Slide caption */}
             <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 text-center">
                 <p className="text-white/40 text-xs italic font-body hidden sm:block">
                     {slides[current].caption}
                 </p>
             </div>
 
-            {/* Dots */}
             <div className="absolute bottom-5 right-6 sm:right-8 z-30 flex items-center gap-2">
                 {slides.map((_, i) => (
                     <button
@@ -148,7 +146,6 @@ export default function HeroSection() {
                 ))}
             </div>
 
-            {/* Prev / Next arrows */}
             <button
                 onClick={prev}
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm flex items-center justify-center text-white transition-all border border-white/10 hover:border-white/30"
@@ -162,7 +159,6 @@ export default function HeroSection() {
                 <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Bottom color bar — green/gold/red from logo */}
             <div className="absolute bottom-0 left-0 right-0 z-30 flex h-1">
                 <div className="flex-1 bg-primary" />
                 <div className="flex-1 bg-secondary" />
