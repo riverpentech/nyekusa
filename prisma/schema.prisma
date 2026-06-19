@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  MEMBER
+  LEADER
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String
+  course      String
+  yearOfStudy String // e.g., "4.1"
+  bio         String?  @db.Text
+  password    String // Hashed
+  role        Role     @default(USER)
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payment      Payment?
+  leadership   Leadership?
+  projectTasks ProjectTask[]
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique // Stores the 6-digit OTP
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  userId            String        @unique
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount            Float         @default(50.0) // 50 bob registration fee
+  status            PaymentStatus @default(PENDING)
+  checkoutRequestID String        @unique // M-Pesa STK push identifier
+  mpesaReceiptCode  String?       @unique
+  phoneNumber       String // Number that made the payment
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model Leadership {
+  id       String   @id @default(cuid())
+  userId   String   @unique
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title    String // e.g., "President", "Treasurer", "Organizing Secretary"
+  term     String // e.g., "2025/2026"
+  priority Int      @default(0) // For sorting UI placement hierarchy
+  joinedAt DateTime @default(now())
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  location    String
+  eventDate   DateTime
+  image       String? // URL to image in Supabase Storage
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  title     String?
+  imageUrl  String
+  caption   String?
+  createdAt DateTime @default(now())
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  fileUrl     String // URL to document in Supabase Storage
+  category    String // e.g., "Constitution", "Minutes", "Budgets"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Opportunity {
+  id          String    @id @default(cuid())
+  title       String // e.g., "Attachment at RiverPen", "Bootcamp"
+  company     String
+  description String    @db.Text
+  link        String? // External application url
+  deadline    DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+// ==========================================
+// ADMIN: FINANCIAL & PROJECT MANAGEMENT
+// ==========================================
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model FinancialRecord {
+  id         String          @id @default(cuid())
+  title      String // e.g., "Event Refreshments", "Member Contributions"
+  amount     Float
+  type       TransactionType
+  category   String // e.g., "Registration", "Welfare", "Logistics"
+  date       DateTime        @default(now())
+  notes      String?         @db.Text
+  recordedBy String // Admin name or ID who logged it
+}
+
+enum ProjectStatus {
+  PLANNING
+  ONGOING
+  COMPLETED
+  ON_HOLD
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String        @db.Text
+  status      ProjectStatus @default(PLANNING)
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Float         @default(0.0)
+  tasks       ProjectTask[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model ProjectTask {
+  id           String    @id @default(cuid())
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  assignedToId String?
+  assignedTo   User?     @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  isCompleted  Boolean   @default(false)
+  dueDate      DateTime?
+}
