@@ -7,6 +7,7 @@ import { ValidationError } from "@/lib/shared/errors";
 type OpportunityBody = {
     title?: string;
     company?: string;
+    category?: string;
     description?: string;
     link?: string;
     apply_url?: string;
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
             data: {
                 title: body.title.trim(),
                 company: body.company.trim(),
+                category: body.category?.trim() || "other",
                 description: body.description.trim(),
                 link: body.link ?? body.apply_url,
                 deadline: body.deadline ? new Date(body.deadline) : null,
