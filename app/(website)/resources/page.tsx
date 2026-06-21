@@ -1,14 +1,33 @@
-"use client"
+import { resourceService } from "@/services/resourcesService";
+import PageHero from "@/components/shared/PageHero";
+import ResourcesClient from "@/components/ResourcesClient";
 
-import ComingSoon from "@/components/shared/ComingSoon";
-import { BookOpen } from "lucide-react";
+export const metadata = {
+    title: "Resource Center | NYEKUSA",
+    description:
+        "Access important documents from our community.",
+};
 
-export default function ResourcesPage() {
+// Resources change occasionally (admin uploads), not on every request —
+// revalidate periodically instead of forcing fully dynamic rendering.
+export const revalidate = 60;
+
+export default async function ResourcesPage() {
+    const resources = await resourceService
+        .listResources({ limit: 50 })
+        .then(({ data }) => data)
+        .catch(() => {
+            return [];
+        });
+
     return (
-        <ComingSoon
-            moduleName="Resources"
-            description="Get access to important documents and more"
-            icon={<BookOpen />}
-        />
+        <div>
+            <PageHero
+                badge="Resources"
+                title="Resource Center"
+                description="Access important documents from our community."
+            />
+            <ResourcesClient initialResources={resources} />
+        </div>
     );
 }

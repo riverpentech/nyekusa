@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { login, register, verifyOTP, requestPasswordReset, resetPassword, verifyPaymentAndSendOTP } from "@/actions/auth";
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import { toast } from "sonner";
@@ -20,29 +20,15 @@ export const AuthCard = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const token = searchParams.get("token");
   const isRegisterPage = pathname.includes("/join");
-  const [mode, setMode] = useState<AuthMode>(isRegisterPage ? "REGISTER" : "LOGIN");
+  const [mode, setMode] = useState<AuthMode>(token ? "RESET" : isRegisterPage ? "REGISTER" : "LOGIN");
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
   const [checkoutRequestId, setCheckoutRequestId] = useState<string | undefined>("");
   const [userId, setUserId] = useState<string | undefined>("");
   const [email, setEmail] = useState<string | undefined>("");
-
-  useEffect(() => {
-    if (pathname.includes("/join")) {
-        setMode("REGISTER");
-    } else if (pathname.includes("/signin")) {
-        setMode("LOGIN");
-    }
-  }, [pathname]);
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (token) {
-      setMode("RESET");
-    }
-  }, [searchParams]);
 
   const onLogin = (values: z.infer<typeof LoginSchema>) => {
     setError("");
@@ -299,7 +285,7 @@ export const AuthCard = () => {
   );
 };
 
-const LoginForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPending: boolean }) => {
+const LoginForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof LoginSchema>) => void; isPending: boolean }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
   });
@@ -320,7 +306,7 @@ const LoginForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPend
   );
 };
 
-const RegisterForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPending: boolean }) => {
+const RegisterForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof RegisterSchema>) => void; isPending: boolean }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
   });
@@ -373,7 +359,7 @@ const RegisterForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isP
   );
 };
 
-const OTPForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPending: boolean }) => {
+const OTPForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof OTPSchema>) => void; isPending: boolean }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof OTPSchema>>({
     resolver: zodResolver(OTPSchema),
   });
@@ -388,7 +374,7 @@ const OTPForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPendin
   );
 };
 
-const ForgotForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPending: boolean }) => {
+const ForgotForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof ResetPasswordRequestSchema>) => void; isPending: boolean }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof ResetPasswordRequestSchema>>({
     resolver: zodResolver(ResetPasswordRequestSchema),
   });
@@ -403,7 +389,7 @@ const ForgotForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPen
   );
 };
 
-const ResetForm = ({ onSubmit, isPending }: { onSubmit: (v: any) => void; isPending: boolean }) => {
+const ResetForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof ResetPasswordSchema>) => void; isPending: boolean }) => {
     const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof ResetPasswordSchema>>({
       resolver: zodResolver(ResetPasswordSchema),
     });

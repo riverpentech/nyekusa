@@ -174,7 +174,7 @@ export default function TestimonialsSection() {
                                 <QuoteIcon className="mb-4 opacity-30 text-foreground/20" />
 
                                 <p className="text-foreground/80 text-sm leading-relaxed mb-6 font-body italic line-clamp-4">
-                                    "{testimonial.quote}"
+                                    &quot;{testimonial.quote}&quot;
                                 </p>
 
                                 <div className="flex items-center gap-3 pt-4 border-t border-border/50">

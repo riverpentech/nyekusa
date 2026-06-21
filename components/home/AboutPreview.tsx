@@ -49,7 +49,7 @@ export default function AboutPreview() {
                             NYEKUSA was founded to unite students from Nyeri County studying at Dedan Kimathi University of Technology. We create an inclusive community where students can thrive, learn and grow together.
                         </p>
                         <p className="text-muted-foreground text-base leading-relaxed mb-8 max-w-lg">
-                            Rooted in the spirit of <span className="text-foreground font-medium">Mt. Kenya</span> — our symbol of heritage and strength — we celebrate Nyeri's rich culture while preparing ourselves for the world beyond campus.
+                            Rooted in the spirit of <span className="text-foreground font-medium">Mt. Kenya</span> — our symbol of heritage and strength — we celebrate Nyeri&apos;s rich culture while preparing ourselves for the world beyond campus.
                         </p>
                         <Link href="/about">
                             <Button variant="outline" className="font-medium border-border hover:border-primary/30 hover:bg-accent">

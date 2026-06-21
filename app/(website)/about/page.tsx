@@ -18,8 +18,8 @@ const timeline = [
     { year: "2020", title: "First Major Event", desc: "Hosted the inaugural Cultural Day, bringing together over 200 students." },
     { year: "2021", title: "Alumni Network", desc: "Launched the alumni mentorship program connecting graduates with current students." },
     { year: "2022", title: "Digital Expansion", desc: "Adapted to virtual community building during the pandemic, keeping the spirit alive." },
-    { year: "2023", title: "500+ Members", desc: "Reached a milestone of 500 active members, solidifying our presence at DeKUT." },
-    { year: "2024", title: "Digital Platform", desc: "Launched the NYEKUSA digital platform to connect members and alumni seamlessly." },
+    { year: "2023", title: "200+ Members", desc: "Reached a milestone of 500 active members, solidifying our presence at DeKUT." },
+    { year: "2026", title: "Digital Platform", desc: "Launched the NYEKUSA digital platform to connect members and alumni seamlessly." },
 ];
 
 export default function About() {

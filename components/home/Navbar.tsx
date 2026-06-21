@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import { useSession, signOut } from "next-auth/react";
+import Avatar from "@/components/shared/Avatar";
 
 const navLinks = [
     { label: "Home", path: "/" },
@@ -29,67 +31,28 @@ const mobileMenuVariants: Variants = {
     hidden: {
         opacity: 0,
         height: 0,
-        transition: {
-            duration: 0.2,
-            ease: "easeInOut",
-            when: "afterChildren"
-        }
+        transition: { duration: 0.2, ease: "easeInOut", when: "afterChildren" }
     },
     visible: {
         opacity: 1,
         height: "auto",
-        transition: {
-            duration: 0.3,
-            ease: "easeInOut",
-            staggerChildren: 0.05,
-            delayChildren: 0.1
-        }
+        transition: { duration: 0.3, ease: "easeInOut", staggerChildren: 0.05, delayChildren: 0.1 }
     }
 };
 
 const dropdownVariants: Variants = {
-    hidden: {
-        opacity: 0,
-        y: -10,
-        scale: 0.95,
-        transition: {
-            duration: 0.15,
-            ease: "easeOut"
-        }
-    },
-    visible: {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        transition: {
-            duration: 0.2,
-            ease: "easeOut"
-        }
-    }
+    hidden: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15, ease: "easeOut" } },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: "easeOut" } }
 };
 
 const mobileLinkVariants: Variants = {
     hidden: { opacity: 0, x: -20 },
-    visible: {
-        opacity: 1,
-        x: 0,
-        transition: {
-            duration: 0.2,
-            ease: "easeOut"
-        }
-    }
+    visible: { opacity: 1, x: 0, transition: { duration: 0.2, ease: "easeOut" } }
 };
 
 const mobileButtonVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            duration: 0.2,
-            ease: "easeOut"
-        }
-    }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } }
 };
 
 export default function Navbar() {
@@ -98,6 +61,9 @@ export default function Navbar() {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const pathname = usePathname();
     const isHome = pathname === "/";
+    const { data: session, status } = useSession();
+    const isAuthenticated = status === "authenticated";
+    const isLoadingSession = status === "loading";
 
     useEffect(() => {
         const onScroll = () => {
@@ -108,7 +74,9 @@ export default function Navbar() {
     }, []);
 
     useEffect(() => {
-        setOpen(false);
+        queueMicrotask(() => {
+            setOpen(false);
+        });
     }, [pathname]);
 
     useEffect(() => {
@@ -173,6 +141,23 @@ export default function Navbar() {
                             </Link>
                         ))}
 
+                        {/* Desktop Dashboard Link for authenticated users */}
+                        {isAuthenticated && (
+                            <Link
+                                href="/dashboard"
+                                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+                                    pathname === "/dashboard"
+                                        ? activeBg
+                                        : isHome && !scrolled
+                                            ? "text-secondary hover:bg-white/10"
+                                            : "text-primary hover:bg-accent"
+                                }`}
+                            >
+                                <LayoutDashboard className="w-3.5 h-3.5" />
+                                Dashboard
+                            </Link>
+                        )}
+
                         <div
                             className="relative group"
                             onMouseEnter={() => setIsDropdownOpen(true)}
@@ -215,18 +200,45 @@ export default function Navbar() {
                     </div>
 
                     <div className="flex items-center gap-2.5">
-                        <Link href="/join" className="hidden sm:block">
-                            <Button
-                                size="sm"
-                                className={`font-semibold text-sm px-4 h-9 transition-all ${
-                                    isHome && !scrolled
-                                        ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                                }`}
-                            >
-                                Join NYEKUSA
-                            </Button>
-                        </Link>
+                        {isLoadingSession ? (
+                            <div className="hidden sm:block w-9 h-9 rounded-full bg-muted animate-pulse" />
+                        ) : isAuthenticated && session?.user ? (
+                            <div className="hidden sm:flex items-center gap-2">
+                                <Link href="/profile" aria-label="View your profile">
+                                    <Avatar
+                                        fullName={session.user.name ?? "?"}
+                                        photoUrl={session.user.image}
+                                        size="sm"
+                                    />
+                                </Link>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => signOut({ callbackUrl: "/" })}
+                                    className={`w-9 h-9 rounded-md transition-colors ${
+                                        isHome && !scrolled
+                                            ? "text-white/80 hover:text-white hover:bg-white/10"
+                                            : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                    }`}
+                                    title="Log out"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <Link href="/join" className="hidden sm:block">
+                                <Button
+                                    size="sm"
+                                    className={`font-semibold text-sm px-4 h-9 transition-all ${
+                                        isHome && !scrolled
+                                            ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    }`}
+                                >
+                                    Join NYEKUSA
+                                </Button>
+                            </Link>
+                        )}
                         <button
                             onClick={() => setOpen(!open)}
                             className={`lg:hidden p-2 rounded-md transition-colors ${
@@ -268,15 +280,52 @@ export default function Navbar() {
                                     </Link>
                                 </motion.div>
                             ))}
+
+                            {/* Mobile Dashboard Link for authenticated users */}
+                            {isAuthenticated && (
+                                <motion.div variants={mobileLinkVariants}>
+                                    <Link
+                                        href="/dashboard"
+                                        className={`flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
+                                            pathname === "/dashboard"
+                                                ? "text-primary bg-accent"
+                                                : "text-primary hover:bg-muted"
+                                        }`}
+                                    >
+                                        <LayoutDashboard className="w-4 h-4" />
+                                        Dashboard
+                                    </Link>
+                                </motion.div>
+                            )}
+
                             <motion.div
-                                className="pt-3 pb-1"
+                                className="pt-3 pb-1 space-y-2"
                                 variants={mobileButtonVariants}
                             >
-                                <Link href="/join">
-                                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                                        Join NYEKUSA
-                                    </Button>
-                                </Link>
+                                {isAuthenticated && session?.user ? (
+                                    <>
+                                        <Link
+                                            href="/profile"
+                                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
+                                        >
+                                            <Avatar fullName={session.user.name ?? "?"} photoUrl={session.user.image} size="sm" />
+                                            <span className="text-sm font-medium text-foreground">View Profile</span>
+                                        </Link>
+                                        <button
+                                            onClick={() => signOut({ callbackUrl: "/" })}
+                                            className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Log Out</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <Link href="/join">
+                                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+                                            Join NYEKUSA
+                                        </Button>
+                                    </Link>
+                                )}
                             </motion.div>
                         </div>
                     </motion.div>

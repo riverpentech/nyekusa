@@ -78,7 +78,7 @@ export default function Contact() {
                         <div className="lg:col-span-2">
                             <h2 className="font-heading text-2xl font-bold text-foreground mb-6">Reach Out</h2>
                             <p className="text-muted-foreground leading-relaxed mb-8">
-                                Whether you're a prospective member, current student, or alumni — we're here to connect with you.
+                                Whether you&apos;re a prospective member, current student, or alumni — we&apos;re here to connect with you.
                             </p>
 
                             <div className="space-y-5">
@@ -142,7 +142,7 @@ export default function Contact() {
                                 <div className="bg-card rounded-xl border border-border/50 p-10 text-center">
                                     <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" />
                                     <h3 className="font-heading text-2xl font-bold text-foreground mb-2">Message Sent!</h3>
-                                    <p className="text-muted-foreground mb-6">Thank you for reaching out. We'll get back to you soon.</p>
+                                    <p className="text-muted-foreground mb-6">Thank you for reaching out. We&apos;ll get back to you soon.</p>
                                     <Button variant="outline" onClick={() => setSubmitted(false)}>Send Another Message</Button>
                                 </div>
                             ) : (

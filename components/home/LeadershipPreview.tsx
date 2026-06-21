@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
+import Avatar from "@/components/shared/Avatar";
 
 interface Leader {
     id: string;
@@ -16,10 +17,10 @@ interface Leader {
 }
 
 const FALLBACK_LEADERS: Leader[] = [
-    { id: "1", full_name: "Washington Mwangi", position: "Organising Secretary", photo_url: "" },
-    { id: "2", full_name: "Samuel Gakuru", position: "Chairperson", photo_url: "" },
-    { id: "3", full_name: "Lucy Wanjiru", position: "Secretary General", photo_url: "" },
-    { id: "4", full_name: "Faith King'ori", position: "Welfare Coordinator", photo_url: "" },
+    { id: "2", full_name: "Washington Mwangi", position: "Organising Secretary", photo_url: "" },
+    { id: "1", full_name: "Samuel Gakuru", position: "Chairperson", photo_url: "/leaders/samuelgakuru.webp" },
+    { id: "3", full_name: "Juliet Gichuki", position: "Treasurer", photo_url: "" },
+    { id: "4", full_name: "Faith King'ori", position: "Welfare Coordinator", photo_url: "/leaders/faithwairimu.webp" },
 ];
 
 const fetchLeaders = async (limit: number = 4): Promise<Leader[]> => {
@@ -111,35 +112,13 @@ export default function LeadershipPreview() {
                             href={`/leadership/${leader.id}`}
                             className="text-center group transition-transform hover:scale-105"
                         >
-                            <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden bg-muted border-2 border-border group-hover:border-primary/30 transition-colors">
-                                {leader.photo_url ? (
-                                    <Image
-                                        src={leader.photo_url}
-                                        alt={leader.full_name}
-                                        width={112}
-                                        height={112}
-                                        className="w-full h-full object-cover"
-                                        priority={false}
-                                        sizes="112px"
-                                        onError={(e) => {
-                                            // Fallback to initials on image error
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                            const parent = target.parentElement;
-                                            if (parent) {
-                                                const fallback = document.createElement('div');
-                                                fallback.className = 'w-full h-full flex items-center justify-center text-2xl font-heading font-bold text-muted-foreground bg-muted';
-                                                fallback.textContent = leader.full_name?.charAt(0) || '?';
-                                                parent.appendChild(fallback);
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-2xl font-heading font-bold text-muted-foreground bg-muted">
-                                        {leader.full_name?.charAt(0) || '?'}
-                                    </div>
-                                )}
-                            </div>
+                            <Avatar
+                                fullName={leader.full_name}
+                                photoUrl={leader.photo_url}
+                                size="lg"
+                                className="mx-auto mb-5"
+                            />
+
                             <h3 className="font-body font-semibold text-foreground text-sm group-hover:text-primary transition-colors">
                                 {leader.full_name}
                             </h3>

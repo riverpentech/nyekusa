@@ -60,8 +60,9 @@ export const initiateStkPush = async (phoneNumber: string, amount: number) => {
       }
     );
     return response.data;
-  } catch (error: any) {
-    console.error("M-Pesa STK Push Error", error.response?.data || error.message);
+  } catch (error: unknown) {
+    const message = axios.isAxiosError(error) ? error.response?.data || error.message : error;
+    console.error("M-Pesa STK Push Error", message);
     throw new Error("Failed to initiate M-Pesa STK push");
   }
 };

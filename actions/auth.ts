@@ -7,11 +7,12 @@ import { LoginSchema, RegisterSchema, OTPSchema, ResetPasswordRequestSchema, Res
 import bcrypt from "bcryptjs";
 import { initiateStkPush } from "@/lib/mpesa";
 import { sendOTPVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
+import type * as z from "zod";
 
 // Helper to generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-export const login = async (values: any) => {
+export const login = async (values: z.infer<typeof LoginSchema>) => {
   const validatedFields = LoginSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -49,7 +50,7 @@ export const login = async (values: any) => {
   }
 };
 
-export const register = async (values: any) => {
+export const register = async (values: z.infer<typeof RegisterSchema>) => {
   const validatedFields = RegisterSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -99,9 +100,9 @@ export const register = async (values: any) => {
     })
 
     return { success: "Payment initiated", userId: user.id, checkoutRequestId: mpesaResponse.CheckoutRequestID };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Registration Error", error);
-    return { error: error.message || "Failed to register" };
+    return { error: error instanceof Error ? error.message : "Failed to register" };
   }
 };
 
@@ -155,7 +156,7 @@ export const verifyOTP = async (email: string, otp: string) => {
     return { success: "Account verified!" };
 }
 
-export const requestPasswordReset = async (values: any) => {
+export const requestPasswordReset = async (values: z.infer<typeof ResetPasswordRequestSchema>) => {
     const validatedFields = ResetPasswordRequestSchema.safeParse(values);
     if (!validatedFields.success) return { error: "Invalid email" };
 
@@ -179,7 +180,7 @@ export const requestPasswordReset = async (values: any) => {
     return { success: "Reset email sent!" };
 }
 
-export const resetPassword = async (token: string, values: any) => {
+export const resetPassword = async (token: string, values: z.infer<typeof ResetPasswordSchema>) => {
     const validatedFields = ResetPasswordSchema.safeParse(values);
     if (!validatedFields.success) return { error: "Invalid password" };
 

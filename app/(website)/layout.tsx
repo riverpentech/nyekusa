@@ -4,6 +4,7 @@ import "../globals.css";
 import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import { Toaster } from "sonner";
+import Providers from "@/app/providers";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -39,10 +40,12 @@ export default function RootLayout({
           className={`${montserrat.variable} ${poppins.variable} h-full antialiased`}
       >
       <body className="min-h-full flex flex-col font-sans">
+      <Providers>
       <Toaster position="top-center" richColors closeButton />
       <Navbar />
       {children}
       <Footer/>
+      </Providers>
       </body>
       </html>
   );

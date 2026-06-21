@@ -24,19 +24,53 @@ enum PaymentStatus {
   FAILED
 }
 
+enum RelationshipStatus {
+  SINGLE
+  DATING
+  MARRIED
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  RATHER_NOT_SAY
+}
+
+enum PaymentPurpose {
+  MEMBERSHIP
+  CONTRIBUTION
+  PRODUCT
+  TICKET
+  CHARITY
+  OTHER
+}
+
 model User {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   name        String
-  email       String   @unique
+  email       String             @unique
   phone       String
+  gender      Gender?
   course      String
+  status      RelationshipStatus @default(SINGLE)
   yearOfStudy String // e.g., "4.1"
-  bio         String?  @db.Text
+  quotes      String?
+  bio         String?            @db.Text
+  photoUrl    String?
+  twitter     String?
+  linkedin    String?
+  facebook    String?
+  instagram   String?
+  tiktok      String?
+  github      String?
   password    String // Hashed
-  role        Role     @default(USER)
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role        Role               @default(MEMBER)
+  isVerified  Boolean            @default(false)
+  active      Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   payment      Payment?
   leadership   Leadership?
@@ -54,16 +88,17 @@ model VerificationToken {
 }
 
 model Payment {
-  id                String        @id @default(cuid())
-  userId            String        @unique
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount            Float         @default(50.0) // 50 bob registration fee
-  status            PaymentStatus @default(PENDING)
-  checkoutRequestID String        @unique // M-Pesa STK push identifier
-  mpesaReceiptCode  String?       @unique
+  id                String         @id @default(cuid())
+  userId            String         @unique
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount            Float          @default(50.0) // 50 bob registration fee
+  status            PaymentStatus  @default(PENDING)
+  checkoutRequestID String         @unique // M-Pesa STK push identifier
+  mpesaReceiptCode  String?        @unique
+  purpose           PaymentPurpose @default(MEMBERSHIP)
   phoneNumber       String // Number that made the payment
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 }
 
 model Leadership {
@@ -72,6 +107,7 @@ model Leadership {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title    String // e.g., "President", "Treasurer", "Organizing Secretary"
   term     String // e.g., "2025/2026"
+  bio      String?  @db.Text
   priority Int      @default(0) // For sorting UI placement hierarchy
   joinedAt DateTime @default(now())
 }
@@ -87,31 +123,40 @@ model Event {
   updatedAt   DateTime @updatedAt
 }
 
-model GalleryItem {
-  id        String   @id @default(cuid())
-  title     String?
-  imageUrl  String
-  caption   String?
-  createdAt DateTime @default(now())
+model GalleryAlbum {
+  id          String    @id @default(cuid())
+  title       String?
+  description String?
+  category    String?
+  date        DateTime?
+  coverImage  String?
+  images      String
+  createdAt   DateTime  @default(now())
 }
 
 model Resource {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  fileUrl     String // URL to document in Supabase Storage
-  category    String // e.g., "Constitution", "Minutes", "Budgets"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String?  @db.Text
+  fileUrl       String // URL to document in Supabase Storage
+  fileType      String?
+  category      String // e.g., "Constitution", "Minutes", "Budgets"
+  department    String?
+  downloadCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Opportunity {
   id          String    @id @default(cuid())
   title       String // e.g., "Attachment at RiverPen", "Bootcamp"
   company     String
+  category    String
   description String    @db.Text
   link        String? // External application url
   deadline    DateTime?
+  startDate   DateTime?
+  endDate     DateTime?
   createdAt   DateTime  @default(now())
 }
 

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+type CallbackItem = {
+  Name: string;
+  Value?: string | number;
+};
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,16 +26,16 @@ export async function POST(req: Request) {
 
     if (ResultCode === 0) {
       // Payment successful
-      const amount = CallbackMetadata.Item.find((item: any) => item.Name === "Amount")?.Value;
-      const mpesaReceiptCode = CallbackMetadata.Item.find((item: any) => item.Name === "MpesaReceiptNumber")?.Value;
-      const phoneNumber = CallbackMetadata.Item.find((item: any) => item.Name === "PhoneNumber")?.Value;
+      const items = CallbackMetadata.Item as CallbackItem[];
+      const amount = items.find((item) => item.Name === "Amount")?.Value;
+      const mpesaReceiptCode = items.find((item) => item.Name === "MpesaReceiptNumber")?.Value;
 
       await prisma.payment.update({
         where: { checkoutRequestID: CheckoutRequestID },
         data: {
           status: "COMPLETED",
-          mpesaReceiptCode,
-          amount: amount ? parseFloat(amount) : 50.0,
+          mpesaReceiptCode: mpesaReceiptCode?.toString(),
+          amount: amount ? parseFloat(amount.toString()) : 50.0,
         },
       });
 

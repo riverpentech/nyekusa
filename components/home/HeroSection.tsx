@@ -72,8 +72,21 @@ export default function HeroSection() {
                 </div>
             ))}
 
-            <div className="absolute inset-0 z-20 bg-linear-to-t from-black/80 via-black/40 to-black/20" />
-            <div className="absolute inset-0 z-20 bg-linear-to-r from-black/30 via-transparent to-transparent" />
+            {/* Bottom gradient — concentrated where the text block sits, fading out higher up */}
+            <div className="absolute inset-0 z-20 bg-linear-to-t from-black/95 via-black/55 via-40% to-black/5" />
+
+            {/* Left gradient — reinforces legibility along the text column */}
+            <div className="absolute inset-0 z-20 bg-linear-to-r from-black/55 via-black/15 via-35% to-transparent" />
+
+            {/* Radial spotlight mask — darkens specifically behind the copy block,
+                leaving the rest of each photo untouched and vivid */}
+            <div
+                className="absolute inset-0 z-20"
+                style={{
+                    background:
+                        "radial-gradient(120% 90% at 5% 100%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 55%)",
+                }}
+            />
 
             <div className="relative z-30 h-full flex flex-col justify-end pb-16 sm:pb-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -90,16 +103,16 @@ export default function HeroSection() {
                                 />
                             </div>
                             <div>
-                                <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-none">
+                                <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-none drop-shadow-md">
                                     NYEKUSA
                                 </h1>
-                                <p className="font-heading text-base sm:text-lg text-secondary italic mt-1 font-normal tracking-wide">
+                                <p className="font-heading text-base sm:text-lg text-secondary italic mt-1 font-normal tracking-wide drop-shadow-sm">
                                     our unity, our strength
                                 </p>
                             </div>
                         </div>
 
-                        <p className="text-white/85 text-lg sm:text-xl leading-relaxed mb-8 max-w-xl font-body font-light">
+                        <p className="text-white/85 text-lg sm:text-xl leading-relaxed mb-8 max-w-xl font-body font-light drop-shadow-sm">
                             Uniting <span className="text-secondary font-medium">100+ students</span> from Nyeri County at DeKUT — building community, fostering leadership, and creating lasting connections.
                         </p>
 

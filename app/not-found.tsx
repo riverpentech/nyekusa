@@ -138,13 +138,13 @@ export default function NotFound() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Link href="/public" className="w-full sm:w-auto">
+                    <Link href="/" className="w-full sm:w-auto">
                         <button
                             className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md border text-sm font-medium text-foreground transition-colors hover:bg-muted"
                             style={{ borderColor: "hsl(48 14% 87%)" }}
                         >
                             <Home size={15} />
-                            Return to Dashboard
+                            Return to Homepage
                         </button>
                     </Link>
                     <Link href="/contact" className="w-full sm:w-auto">
