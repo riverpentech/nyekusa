@@ -134,6 +134,19 @@ model GalleryAlbum {
   createdAt   DateTime  @default(now())
 }
 
+model GalleryImage {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  category    String?  // meetings, hiking, ceremony, social, induction, outreach, other
+  url         String   // URL of the image
+  fileName    String   // unique name in Supabase storage
+  fileSize    Int
+  mimeType    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Resource {
   id            String   @id @default(cuid())
   title         String

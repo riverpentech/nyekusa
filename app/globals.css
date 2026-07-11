@@ -163,3 +163,20 @@
     border-color: var(--secondary);
   }
 }
+
+/* Responsive max-width adjustments for large screens */
+@media (min-width: 1024px) {
+  .max-w-7xl {
+    max-width: 88rem; /* 1408px */
+  }
+}
+@media (min-width: 1280px) {
+  .max-w-7xl {
+    max-width: 92rem; /* 1472px */
+  }
+}
+@media (min-width: 1536px) {
+  .max-w-7xl {
+    max-width: 96rem; /* 1536px */
+  }
+}

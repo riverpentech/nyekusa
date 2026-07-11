@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
     User as UserIcon,
     BookOpen,
@@ -8,48 +9,150 @@ import {
     FileText,
     Globe,
     Save,
-    CheckCircle
+    CheckCircle,
+    Loader2
 } from "lucide-react";
 
 export default function ProfilePage() {
-    // Local state pre-populated with schema fields matching your types
+    const { data: session } = useSession();
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
-        name: "Samuel Gakuru",
-        email: "samuel.gakuru@example.com",
-        phone: "0712345678",
+        name: "",
+        email: "",
+        phone: "",
         gender: "MALE", // Gender Enum
-        course: "BSc. Computer Science",
+        course: "",
         status: "SINGLE", // RelationshipStatus Enum
-        yearOfStudy: "4.1",
-        quotes: "Our unity, our strength.",
-        bio: "A passionate leader dedicated to uniting students and fostering community growth through open-source software and networking.",
-        twitter: "https://twitter.com/samuelgakuru",
-        linkedin: "https://linkedin.com/in/samuelgakuru",
+        yearOfStudy: "",
+        quotes: "",
+        bio: "",
+        twitter: "",
+        linkedin: "",
         facebook: "",
         instagram: "",
         tiktok: "",
-        github: "https://github.com/samuelgakuru",
+        github: "",
     });
 
     const [isSaving, setIsSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+
+    useEffect(() => {
+        const userId = session?.user?.id;
+        if (!userId) return;
+
+        let isMounted = true;
+        const fetchProfile = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const response = await fetch(`/api/members/${userId}`);
+                if (!response.ok) {
+                    throw new Error("Failed to load profile details");
+                }
+                const data = await response.json();
+                if (isMounted) {
+                    setFormData({
+                        name: data.full_name ?? "",
+                        email: data.email ?? "",
+                        phone: data.phone ?? "",
+                        gender: data.gender ?? "MALE",
+                        course: data.course ?? "",
+                        status: data.relationshipStatus ?? "SINGLE",
+                        yearOfStudy: data.year_of_study ?? "",
+                        quotes: data.quotes ?? "",
+                        bio: data.bio ?? "",
+                        twitter: data.twitter ?? "",
+                        linkedin: data.linkedin ?? "",
+                        facebook: data.facebook ?? "",
+                        instagram: data.instagram ?? "",
+                        tiktok: data.tiktok ?? "",
+                        github: data.github ?? "",
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading profile:", err);
+                if (isMounted) {
+                    setError("Failed to load profile. Please refresh the page.");
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        fetchProfile();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [session?.user?.id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
+        const userId = session?.user?.id;
+        if (!userId) return;
 
-        // Simulate API database action updating via Prisma backend
-        setTimeout(() => {
-            setIsSaving(false);
-            setSuccessMessage("Profile saved successfully!");
+        setIsSaving(true);
+        setError(null);
+        setSuccessMessage("");
+
+        try {
+            const payload = {
+                full_name: formData.name,
+                phone: formData.phone,
+                gender: formData.gender,
+                course: formData.course,
+                status: formData.status,
+                year_of_study: formData.yearOfStudy,
+                quotes: formData.quotes,
+                bio: formData.bio,
+                twitter: formData.twitter,
+                linkedin: formData.linkedin,
+                facebook: formData.facebook,
+                instagram: formData.instagram,
+                tiktok: formData.tiktok,
+                github: formData.github,
+            };
+
+            const response = await fetch(`/api/members/${userId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || "Failed to update profile");
+            }
+
+            setSuccessMessage("Profile updated successfully!");
             setTimeout(() => setSuccessMessage(""), 4000);
-        }, 1200);
+        } catch (err) {
+            console.error("Error saving profile:", err);
+            setError(err instanceof Error ? err.message : "Failed to save profile. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    if (isLoading || !session?.user?.id) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-800" />
+                <p className="text-sm text-slate-500 font-medium">Loading your profile details...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -70,14 +173,21 @@ export default function ProfilePage() {
                 </div>
             )}
 
+            {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm font-medium text-red-800 border border-red-200 animate-fade-in">
+                    <span className="h-2 w-2 rounded-full bg-red-600 animate-pulse shrink-0" />
+                    {error}
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
                 {/* Left Column: Avatar & Summary Bio */}
                 <div className="space-y-6 lg:col-span-1">
                     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm text-center">
                         <div className="mx-auto h-24 w-24 rounded-full bg-emerald-800 flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-inner">
-                            {formData.name.split(" ").map(n => n[0]).join("")}
+                            {formData.name ? formData.name.split(" ").filter(Boolean).slice(0, 2).map(n => n[0]).join("").toUpperCase() : "U"}
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900">{formData.name}</h3>
+                        <h3 className="text-lg font-bold text-slate-900">{formData.name || "Member Profile"}</h3>
                         <p className="text-xs text-amber-600 font-semibold tracking-wide uppercase mt-0.5">Member Tier</p>
 
                         <div className="mt-4 pt-4 border-t border-slate-100 text-left">
@@ -292,7 +402,7 @@ export default function ProfilePage() {
                             disabled={isSaving}
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors disabled:opacity-50"
                         >
-                            <Save size={16} />
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                             {isSaving ? "Saving..." : "Save System Profile"}
                         </button>
                     </div>

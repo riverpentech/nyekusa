@@ -35,9 +35,10 @@ type Resource = {
 
 type ResourcesClientProps = {
     initialResources?: Resource[];
+    compact?: boolean;
 };
 
-export default function ResourcesClient({ initialResources = [] }: ResourcesClientProps) {
+export default function ResourcesClient({ initialResources = [], compact = false }: ResourcesClientProps) {
     const [search, setSearch] = useState("");
     const [catFilter, setCatFilter] = useState("");
 
@@ -66,8 +67,8 @@ export default function ResourcesClient({ initialResources = [] }: ResourcesClie
     };
 
     return (
-        <section className="py-16 sm:py-24">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className={compact ? "" : "py-16 sm:py-24"}>
+            <div className={compact ? "" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10">
                     <div className="relative flex-1 max-w-md">

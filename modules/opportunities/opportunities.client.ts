@@ -29,7 +29,7 @@ export async function getOpportunities(params: OpportunityParams = {}) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            cache: 'no-store', // Using SSR/SSG based on your needs
+            cache: 'no-store',
         });
 
         if (!response.ok) {

@@ -15,17 +15,13 @@ const navLinks = [
     { label: "About", path: "/about" },
     { label: "Leadership", path: "/leadership" },
     { label: "Events", path: "/events" },
-    { label: "Members", path: "/members" },
-    { label: "Opportunities", path: "/opportunities" },
     { label: "Alumni", path: "/alumni" },
-    { label: "Projects", path: "/projects" },
-    { label: "Resources", path: "/resources" },
     { label: "Gallery", path: "/gallery" },
     { label: "Contact", path: "/contact" },
 ];
 
-const primaryLinks = navLinks.slice(0, 6);
-const moreLinks = navLinks.slice(6);
+const primaryLinks = navLinks.slice(0, 5);
+const moreLinks = navLinks.slice(5);
 
 const mobileMenuVariants: Variants = {
     hidden: {
@@ -204,7 +200,7 @@ export default function Navbar() {
                             <div className="hidden sm:block w-9 h-9 rounded-full bg-muted animate-pulse" />
                         ) : isAuthenticated && session?.user ? (
                             <div className="hidden sm:flex items-center gap-2">
-                                <Link href="/profile" aria-label="View your profile">
+                                <Link href="/dashboard/profile" aria-label="View your profile">
                                     <Avatar
                                         fullName={session.user.name ?? "?"}
                                         photoUrl={session.user.image}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { memberService } from "@/services/membersService";
+import { memberService } from "@/modules/members/members.service";
 import { handleError } from "@/lib/shared/handleErrors";
 
 // GET /api/members/:id

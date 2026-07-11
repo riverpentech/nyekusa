@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { memberRepository } from "@/repositories/membersRepository";
+import { memberRepository } from "@/modules/members/members.repository";
 import { NotFoundError, ValidationError } from "@/lib/shared/errors";
 import { Prisma, Role, Gender, RelationshipStatus } from "@prisma/client";
 
@@ -17,6 +17,12 @@ type ApiMemberInput = {
     gender?: string; // Maps to Gender enum values string representation
     is_verified?: boolean;
     password?: string;
+    twitter?: string | null;
+    linkedin?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+    tiktok?: string | null;
+    github?: string | null;
 };
 
 type MemberListQuery = {
@@ -68,6 +74,12 @@ function toApiMember(user: SafeMember) {
         status: user.isVerified ? "ACTIVE" : "INACTIVE",
         created_at: user.createdAt,
         updated_at: user.updatedAt,
+        twitter: user.twitter,
+        linkedin: user.linkedin,
+        facebook: user.facebook,
+        instagram: user.instagram,
+        tiktok: user.tiktok,
+        github: user.github,
     };
 }
 
@@ -93,6 +105,12 @@ function toDbData(payload: ApiMemberInput) {
     if (payload.is_verified !== undefined) {
         data.isVerified = Boolean(payload.is_verified);
     }
+    if (payload.twitter !== undefined) data.twitter = payload.twitter;
+    if (payload.linkedin !== undefined) data.linkedin = payload.linkedin;
+    if (payload.facebook !== undefined) data.facebook = payload.facebook;
+    if (payload.instagram !== undefined) data.instagram = payload.instagram;
+    if (payload.tiktok !== undefined) data.tiktok = payload.tiktok;
+    if (payload.github !== undefined) data.github = payload.github;
     return data;
 }
 
@@ -104,6 +122,7 @@ function normalizeStatus(status?: string) {
     throw new ValidationError('status must be "active" or "inactive"');
 }
 
+// Helper to validate and normalize role
 function normalizeRole(role?: string) {
     if (!role) return undefined;
     const upper = String(role).toUpperCase();
@@ -169,8 +188,6 @@ export const memberService = {
         const isVerified = normalizeStatus(status);
         if (isVerified !== undefined) where.isVerified = isVerified;
 
-        // Note: The schema does not define a 'department' field directly on User.
-        // If 'department' filters through an associated relation or text matching, adjust here.
         if (year_of_study) where.yearOfStudy = year_of_study;
 
         if (search) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
@@ -10,13 +11,19 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // Determine position based on route
-  // signin -> content on right, image on left
-  // join -> content on left, image on right
   const isRegister = pathname.includes("/join");
 
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => setIsLargeScreen(window.innerWidth >= 1024);
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
+  }, []);
+
   return (
-    <div className="min-h-screen relative flex flex-col lg:flex-row overflow-hidden bg-background">
+    <div className="min-h-screen relative flex flex-col lg:flex-row lg:overflow-hidden overflow-y-auto bg-background">
       {/* Animated Layout Wrapper */}
       <div className="flex-1 relative flex flex-col lg:flex-row w-full min-h-screen">
         
@@ -24,9 +31,9 @@ export default function AuthLayout({
         <motion.div 
           className="hidden lg:block relative h-full w-1/2 z-10"
           initial={false}
-          animate={{ 
+          animate={isLargeScreen ? { 
             x: isRegister ? "100%" : "0%",
-          }}
+          } : {}}
           transition={{ type: "spring", stiffness: 80, damping: 20 }}
         >
           <Image
@@ -60,13 +67,12 @@ export default function AuthLayout({
           </div>
         </motion.div>
 
-        {/* Auth Content Section */}
         <motion.div 
-          className="relative flex-1 flex items-center justify-center p-4 sm:p-6 bg-background z-20"
+          className="relative flex-1 flex items-center justify-center p-4 sm:p-6 py-12 sm:py-16 lg:py-6 bg-background z-20"
           initial={false}
-          animate={{ 
+          animate={isLargeScreen ? { 
             x: isRegister ? "-100%" : "0%",
-          }}
+          } : {}}
           transition={{ type: "spring", stiffness: 80, damping: 20 }}
         >
           {/* Watermark Logo */}
@@ -89,10 +95,10 @@ export default function AuthLayout({
         <motion.div 
           className="hidden lg:block absolute top-0 bottom-0 w-full pointer-events-none z-30"
           initial={false}
-          animate={{ 
+          animate={isLargeScreen ? { 
             left: "50%",
             x: "-50%",
-          }}
+          } : {}}
           transition={{ type: "spring", stiffness: 40, damping: 12 }}
         >
             <motion.div 

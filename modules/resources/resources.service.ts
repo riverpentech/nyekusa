@@ -1,4 +1,4 @@
-import { resourceRepository } from "@/repositories/resourcesRepository";
+import { resourceRepository } from "@/modules/resources/resources.repository";
 import { NotFoundError, ValidationError } from "@/lib/shared/errors";
 import type { Prisma } from "@prisma/client";
 
@@ -20,10 +20,6 @@ type ResourceListQuery = {
 };
 
 type ResourceRecord = NonNullable<Awaited<ReturnType<typeof resourceRepository.findById>>>;
-
-// category is a free-form string in the DB (admin docs reuse this model
-// with values like "Constitution"/"Minutes"), so we don't enforce an enum —
-// any non-empty string is accepted and stored as-is.
 
 function toApiResource(resource: ResourceRecord) {
     return {
@@ -80,7 +76,6 @@ function validateResourceInput(payload: ApiResourceInput, { partial = false } = 
 }
 
 export const resourceService = {
-    // query: { category, department, search, page, limit }
     async listResources(query: ResourceListQuery = {}) {
         const { category, department, search, limit, page } = query;
 
@@ -148,8 +143,6 @@ export const resourceService = {
         return { id };
     },
 
-    // Returns the raw fileUrl (not the API-shaped object) — the download
-    // route needs it to redirect directly to the file.
     async registerDownload(id: string) {
         const exists = await resourceRepository.existsById(id);
         if (!exists) throw new NotFoundError(`Resource with id "${id}" not found`);

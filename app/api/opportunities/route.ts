@@ -1,40 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { serverOpportunityService } from "@/modules/opportunities/opportunities.service";
 import { handleError } from "@/lib/shared/handleErrors";
-import { ValidationError } from "@/lib/shared/errors";
-
-type OpportunityBody = {
-    title?: string;
-    company?: string;
-    category?: string;
-    description?: string;
-    link?: string;
-    apply_url?: string;
-    deadline?: string | null;
-};
-
-function toApiOpportunity(opportunity: {
-    id: string;
-    title: string;
-    company: string;
-    description: string;
-    link: string | null;
-    deadline: Date | null;
-    createdAt: Date;
-}) {
-    return {
-        id: opportunity.id,
-        title: opportunity.title,
-        company: opportunity.company,
-        location: "",
-        category: "other",
-        deadline: opportunity.deadline?.toISOString() ?? opportunity.createdAt.toISOString(),
-        description: opportunity.description,
-        apply_url: opportunity.link ?? "#",
-        created_at: opportunity.createdAt,
-    };
-}
 
 export async function GET(request: NextRequest) {
     try {
@@ -42,12 +9,9 @@ export async function GET(request: NextRequest) {
         const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "", 10) || 50, 1), 100);
         const sort = searchParams.get("sort");
 
-        const opportunities = await prisma.opportunity.findMany({
-            take: limit,
-            orderBy: { createdAt: sort?.startsWith("-") ? "desc" : "asc" },
-        });
+        const opportunities = await serverOpportunityService.listOpportunities(limit, sort);
 
-        return NextResponse.json(opportunities.map(toApiOpportunity));
+        return NextResponse.json(opportunities);
     } catch (err) {
         return handleError(err);
     }
@@ -55,28 +19,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = (await request.json()) as OpportunityBody;
+        const body = await request.json();
+        const opportunity = await serverOpportunityService.createOpportunity(body);
 
-        if (!body.title?.trim() || !body.company?.trim() || !body.description?.trim()) {
-            throw new ValidationError("Validation failed", {
-                title: "title is required",
-                company: "company is required",
-                description: "description is required",
-            });
-        }
-
-        const opportunity = await prisma.opportunity.create({
-            data: {
-                title: body.title.trim(),
-                company: body.company.trim(),
-                category: body.category?.trim() || "other",
-                description: body.description.trim(),
-                link: body.link ?? body.apply_url,
-                deadline: body.deadline ? new Date(body.deadline) : null,
-            },
-        });
-
-        return NextResponse.json(toApiOpportunity(opportunity), { status: 201 });
+        return NextResponse.json(opportunity, { status: 201 });
     } catch (err) {
         return handleError(err);
     }

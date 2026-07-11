@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link"
 import { Mail, MapPin, Phone } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 const footerLinks = {
     Association: [
@@ -24,6 +25,32 @@ const footerLinks = {
 };
 
 export default function Footer() {
+    const pathname = usePathname();
+    const isDashboard = pathname.startsWith("/dashboard");
+
+    if (isDashboard) {
+        return (
+            <footer className="bg-slate-50 border-t border-slate-200 py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500">
+                    <p className="text-xs">
+                        © {new Date().getFullYear()} NYEKUSA. All rights reserved. | Designed and developed by{" "}
+                        <a
+                            href="https://www.riverpen.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-800 hover:underline transition-colors font-medium"
+                        >
+                            RiverPen Technologies
+                        </a>
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                        <span>Nyeri County · DeKUT</span>
+                    </div>
+                </div>
+            </footer>
+        );
+    }
+
     return (
         <footer className="bg-foreground text-background/80">
             <div className="flex h-1">

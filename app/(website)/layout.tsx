@@ -5,6 +5,7 @@ import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import { Toaster } from "sonner";
 import Providers from "@/app/providers";
+import {SessionProvider} from "next-auth/react";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -39,7 +40,7 @@ export default function RootLayout({
           lang="en"
           className={`${montserrat.variable} ${poppins.variable} h-full antialiased`}
       >
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
       <Providers>
       <Toaster position="top-center" richColors closeButton />
       <Navbar />

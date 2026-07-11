@@ -174,7 +174,7 @@ export const AuthCard = () => {
   }, [mode, checkoutRequestId, userId]);
 
   return (
-    <div className="bg-card p-8 rounded-3xl shadow-2xl border border-border/50">
+    <div className="bg-card my-10 p-8 rounded-3xl shadow-2xl border border-border/50">
       <AnimatePresence mode="wait">
         {mode === "LOGIN" && (
           <motion.div

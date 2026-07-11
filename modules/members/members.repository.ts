@@ -19,6 +19,12 @@ const SAFE_SELECT = {
     isVerified: true,
     createdAt: true,
     updatedAt: true,
+    twitter: true,
+    linkedin: true,
+    facebook: true,
+    instagram: true,
+    tiktok: true,
+    github: true,
 };
 
 export const memberRepository = {

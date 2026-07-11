@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { resourceService } from "@/services/resourcesService";
+import { resourceService } from "@/modules/resources/resources.service";
 import { handleError } from "@/lib/shared/handleErrors";
 
 // GET /api/resources/:id

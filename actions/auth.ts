@@ -1,18 +1,12 @@
 "use server";
 
-import { AuthError } from "next-auth";
-import { signIn } from "@/auth";
-import prisma from "@/lib/prisma";
 import { LoginSchema, RegisterSchema, OTPSchema, ResetPasswordRequestSchema, ResetPasswordSchema } from "@/lib/schemas";
-import bcrypt from "bcryptjs";
-import { initiateStkPush } from "@/lib/mpesa";
-import { sendOTPVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
+import { serverAuthService } from "@/modules/auth/auth.service";
 import type * as z from "zod";
 
-// Helper to generate 6-digit OTP
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-export const login = async (values: z.infer<typeof LoginSchema>) => {
+export const login = async (
+  values: z.infer<typeof LoginSchema>
+): Promise<{ success?: string; error?: string; unverified?: boolean }> => {
   const validatedFields = LoginSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -21,36 +15,20 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
 
   const { email, password } = validatedFields.data;
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (!existingUser || !existingUser.email || !existingUser.password) {
-    return { error: "Email does not exist!" };
-  }
-
-  if (!existingUser.isVerified) {
-    return { error: "Account not verified! Please complete registration.", unverified: true };
-  }
-
   try {
-    await signIn("credentials", {
-      email,
-      password,
-      redirectTo: "/dashboard",
-    });
-    return { success: "Logged in!" };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return { error: "Invalid credentials!" };
-        default:
-          return { error: "Something went wrong!" };
-      }
+    return await serverAuthService.login(email, password);
+  } catch (error: any) {
+    // Re-throw redirect errors so Next.js handles the client redirection correctly
+    if (error.message === "NEXT_REDIRECT" || error.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
     }
-    throw error;
+    return { error: error.message || "Failed to log in" };
   }
 };
 
-export const register = async (values: z.infer<typeof RegisterSchema>) => {
+export const register = async (
+  values: z.infer<typeof RegisterSchema>
+): Promise<{ success?: string; error?: string; userId?: string; checkoutRequestId?: string }> => {
   const validatedFields = RegisterSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -59,148 +37,77 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
 
   const { fullName, email, password, phone, course, yearOfStudy, bio } = validatedFields.data;
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) return { error: "Email already in use!" };
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   try {
-    // Create user in PENDING state
-    const user = await prisma.user.create({
-      data: {
-        name: fullName,
-        email,
-        password: hashedPassword,
-        phone,
-        course,
-        yearOfStudy,
-        bio,
-        isVerified: false,
-      },
+    return await serverAuthService.register({
+      fullName,
+      email,
+      password,
+      phone,
+      course,
+      yearOfStudy,
+      bio,
     });
-
-    // Create payment record
-    const payment = await prisma.payment.create({
-        data: {
-            userId: user.id,
-            amount: 50.0,
-            status: "PENDING",
-            checkoutRequestID: `temp_${user.id}_${Date.now()}`, // Will be updated by M-Pesa
-            phoneNumber: phone
-        }
-    })
-
-    // Initiate M-Pesa STK Push
-    const mpesaResponse = await initiateStkPush(phone, 50);
-
-    // Update payment with real checkoutRequestID
-    await prisma.payment.update({
-        where: { id: payment.id },
-        data: { checkoutRequestID: mpesaResponse.CheckoutRequestID }
-    })
-
-    return { success: "Payment initiated", userId: user.id, checkoutRequestId: mpesaResponse.CheckoutRequestID };
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Registration Error", error);
-    return { error: error instanceof Error ? error.message : "Failed to register" };
+    return { error: error.message || "Failed to register" };
   }
 };
 
-export const verifyPaymentAndSendOTP = async (userId: string) => {
-    const payment = await prisma.payment.findUnique({
-        where: { userId }
-    })
+export const verifyPaymentAndSendOTP = async (
+  userId: string
+): Promise<{ success?: string; error?: string }> => {
+  try {
+    return await serverAuthService.verifyPaymentAndSendOTP(userId);
+  } catch (error: any) {
+    return { error: error.message || "Failed to send OTP" };
+  }
+};
 
-    if (!payment || payment.status !== "COMPLETED") {
-        return { error: "Payment not confirmed yet" };
-    }
+export const verifyOTP = async (
+  email: string,
+  otp: string
+): Promise<{ success?: string; error?: string }> => {
+  const validatedFields = OTPSchema.safeParse({ otp });
+  if (!validatedFields.success) return { error: "Invalid OTP" };
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return { error: "User not found" };
+  try {
+    return await serverAuthService.verifyOTP(email, otp);
+  } catch (error: any) {
+    return { error: error.message || "Failed to verify OTP" };
+  }
+};
 
-    const otp = generateOTP();
-    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+export const requestPasswordReset = async (
+  values: z.infer<typeof ResetPasswordRequestSchema>
+): Promise<{ success?: string; error?: string }> => {
+  const validatedFields = ResetPasswordRequestSchema.safeParse(values);
+  if (!validatedFields.success) return { error: "Invalid email" };
 
-    await prisma.verificationToken.create({
-        data: {
-            email: user.email,
-            token: otp,
-            expires
-        }
-    })
+  const { email } = validatedFields.data;
 
-    await sendOTPVerificationEmail(user.email, otp);
+  try {
+    return await serverAuthService.requestPasswordReset(email);
+  } catch (error: any) {
+    return { error: error.message || "Failed to request password reset" };
+  }
+};
 
-    return { success: "OTP sent" };
-}
+export const resetPassword = async (
+  token: string,
+  values: z.infer<typeof ResetPasswordSchema>
+): Promise<{ success?: string; error?: string }> => {
+  const validatedFields = ResetPasswordSchema.safeParse(values);
+  if (!validatedFields.success) return { error: "Invalid password" };
 
-export const verifyOTP = async (email: string, otp: string) => {
-    const validatedFields = OTPSchema.safeParse({ otp });
-    if (!validatedFields.success) return { error: "Invalid OTP" };
+  if (!token) {
+    return { error: "Missing token!" };
+  }
 
-    const token = await prisma.verificationToken.findFirst({
-        where: { email, token: otp }
-    })
+  const { password } = validatedFields.data;
 
-    if (!token || token.expires < new Date()) {
-        return { error: "Invalid or expired OTP" };
-    }
-
-    await prisma.user.update({
-        where: { email },
-        data: { isVerified: true }
-    })
-
-    await prisma.verificationToken.delete({ where: { id: token.id } });
-
-    return { success: "Account verified!" };
-}
-
-export const requestPasswordReset = async (values: z.infer<typeof ResetPasswordRequestSchema>) => {
-    const validatedFields = ResetPasswordRequestSchema.safeParse(values);
-    if (!validatedFields.success) return { error: "Invalid email" };
-
-    const { email } = validatedFields.data;
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return { error: "Email not found" };
-
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-    await prisma.verificationToken.create({
-        data: {
-            email,
-            token,
-            expires
-        }
-    })
-
-    await sendPasswordResetEmail(email, token);
-
-    return { success: "Reset email sent!" };
-}
-
-export const resetPassword = async (token: string, values: z.infer<typeof ResetPasswordSchema>) => {
-    const validatedFields = ResetPasswordSchema.safeParse(values);
-    if (!validatedFields.success) return { error: "Invalid password" };
-
-    const verificationToken = await prisma.verificationToken.findUnique({
-        where: { token }
-    })
-
-    if (!verificationToken || verificationToken.expires < new Date()) {
-        return { error: "Invalid or expired token" };
-    }
-
-    const { password } = validatedFields.data;
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await prisma.user.update({
-        where: { email: verificationToken.email },
-        data: { password: hashedPassword }
-    })
-
-    await prisma.verificationToken.delete({ where: { id: verificationToken.id } });
-
-    return { success: "Password reset successfully!" };
-}
+  try {
+    return await serverAuthService.resetPassword(token, password);
+  } catch (error: any) {
+    return { error: error.message || "Failed to reset password" };
+  }
+};

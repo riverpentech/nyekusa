@@ -1,24 +1,21 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { paymentService } from "@/modules/payments/payments.service";
+import { handleError } from "@/lib/shared/handleErrors";
 
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const checkoutRequestId = searchParams.get("checkoutRequestId");
+    try {
+        const { searchParams } = new URL(req.url);
+        const checkoutRequestId = searchParams.get("checkoutRequestId");
 
-  if (!checkoutRequestId) {
-    return NextResponse.json({ error: "Missing checkoutRequestId" }, { status: 400 });
-  }
+        if (!checkoutRequestId) {
+            return NextResponse.json({ error: "Missing checkoutRequestId" }, { status: 400 });
+        }
 
-  const payment = await prisma.payment.findUnique({
-    where: { checkoutRequestID: checkoutRequestId },
-    select: { status: true, userId: true }
-  });
-
-  if (!payment) {
-    return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ status: payment.status, userId: payment.userId });
+        const statusData = await paymentService.getPaymentStatus(checkoutRequestId);
+        return NextResponse.json(statusData);
+    } catch (err) {
+        return handleError(err);
+    }
 }
