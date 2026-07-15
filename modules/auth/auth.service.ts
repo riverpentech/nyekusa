@@ -76,8 +76,8 @@ export const serverAuthService = {
             phoneNumber: data.phone,
         });
 
-        // Initiate M-Pesa STK Push
-        const mpesaResponse = await initiateStkPush(data.phone, 50);
+        // Initiate M-Pesa STK Push via Lipa na RiverPen aggregator
+        const mpesaResponse = await initiateStkPush(data.phone, 50, `MEMBERSHIP-${payment.id}`);
 
         // Update payment with real checkoutRequestID
         await paymentRepository.update(payment.id, {

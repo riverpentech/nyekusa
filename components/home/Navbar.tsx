@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, ChevronDown, LogOut, LayoutDashboard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -154,6 +154,23 @@ export default function Navbar() {
                             </Link>
                         )}
 
+                        {/* Desktop Admin Panel Link for Admin users */}
+                        {isAuthenticated && (session?.user as any)?.role === "ADMIN" && (
+                            <Link
+                                href="/admin/dashboard"
+                                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+                                    pathname.startsWith("/admin")
+                                        ? activeBg
+                                        : isHome && !scrolled
+                                            ? "text-amber-300 hover:bg-white/10"
+                                            : "text-amber-800 hover:bg-amber-50"
+                                }`}
+                            >
+                                <Shield className="w-3.5 h-3.5" />
+                                Admin Panel
+                            </Link>
+                        )}
+
                         <div
                             className="relative group"
                             onMouseEnter={() => setIsDropdownOpen(true)}
@@ -222,18 +239,33 @@ export default function Navbar() {
                                 </Button>
                             </div>
                         ) : (
-                            <Link href="/join" className="hidden sm:block">
-                                <Button
-                                    size="sm"
-                                    className={`font-semibold text-sm px-4 h-9 transition-all ${
-                                        isHome && !scrolled
-                                            ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                                    }`}
-                                >
-                                    Join NYEKUSA
-                                </Button>
-                            </Link>
+                            <div className="hidden sm:flex items-center gap-2">
+                                <Link href="/signin">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`font-semibold text-sm px-4 h-9 transition-all ${
+                                            isHome && !scrolled
+                                                ? "text-white hover:bg-white/10"
+                                                : "text-slate-700 hover:bg-slate-100"
+                                        }`}
+                                    >
+                                        Sign In
+                                    </Button>
+                                </Link>
+                                <Link href="/join">
+                                    <Button
+                                        size="sm"
+                                        className={`font-semibold text-sm px-4 h-9 transition-all ${
+                                            isHome && !scrolled
+                                                ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                                                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                                        }`}
+                                    >
+                                        Join NYEKUSA
+                                    </Button>
+                                </Link>
+                            </div>
                         )}
                         <button
                             onClick={() => setOpen(!open)}
@@ -294,6 +326,23 @@ export default function Navbar() {
                                 </motion.div>
                             )}
 
+                            {/* Mobile Admin Panel Link for Admin users */}
+                            {isAuthenticated && (session?.user as any)?.role === "ADMIN" && (
+                                <motion.div variants={mobileLinkVariants}>
+                                    <Link
+                                        href="/admin/dashboard"
+                                        className={`flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
+                                            pathname.startsWith("/admin")
+                                                ? "text-amber-800 bg-amber-50"
+                                                : "text-amber-800 hover:bg-muted"
+                                        }`}
+                                    >
+                                        <Shield className="w-4 h-4" />
+                                        Admin Panel
+                                    </Link>
+                                </motion.div>
+                            )}
+
                             <motion.div
                                 className="pt-3 pb-1 space-y-2"
                                 variants={mobileButtonVariants}
@@ -316,11 +365,18 @@ export default function Navbar() {
                                         </button>
                                     </>
                                 ) : (
-                                    <Link href="/join">
-                                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                                            Join NYEKUSA
-                                        </Button>
-                                    </Link>
+                                    <div className="flex gap-2">
+                                        <Link href="/signin" className="flex-1">
+                                            <Button variant="outline" className="w-full font-semibold border-slate-200 text-slate-800">
+                                                Sign In
+                                            </Button>
+                                        </Link>
+                                        <Link href="/join" className="flex-1">
+                                            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+                                                Join NYEKUSA
+                                            </Button>
+                                        </Link>
+                                    </div>
                                 )}
                             </motion.div>
                         </div>

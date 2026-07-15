@@ -62,6 +62,31 @@ export const serverOpportunityService = {
         });
 
         return toApiOpportunity(opportunity);
+    },
+
+    async updateOpportunity(id: string, body: Partial<OpportunityInput>) {
+        const data: any = {};
+        if (body.title !== undefined) data.title = body.title.trim();
+        if (body.company !== undefined) data.company = body.company.trim();
+        if (body.category !== undefined) data.category = body.category.trim();
+        if (body.description !== undefined) data.description = body.description.trim();
+        if (body.link !== undefined) data.link = body.link;
+        if (body.apply_url !== undefined) data.link = body.apply_url;
+        if (body.deadline !== undefined) data.deadline = body.deadline ? new Date(body.deadline) : null;
+
+        const updated = await opportunityRepository.update(id, data);
+        return toApiOpportunity(updated);
+    },
+
+    async deleteOpportunity(id: string) {
+        const deleted = await opportunityRepository.remove(id);
+        return toApiOpportunity(deleted);
+    },
+
+    async getOpportunity(id: string) {
+        const opp = await opportunityRepository.findById(id);
+        if (!opp) return null;
+        return toApiOpportunity(opp);
     }
 };
 export const opportunityService = serverOpportunityService;

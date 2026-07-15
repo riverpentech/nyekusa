@@ -1,6 +1,7 @@
 import React from "react";
 import PageHero from "@/components/shared/PageHero";
 import AlumniSearch from "@/components/AlumniSearch";
+import { prisma } from "@/lib/prisma";
 
 export interface AlumniType {
     id: string;
@@ -15,18 +16,36 @@ export interface AlumniType {
     membership_status?: string;
 }
 
-
 async function getAlumniData(): Promise<AlumniType[]> {
-
     try {
-        const response = await fetch(`/api/alumni`)
+        const alumni = await prisma.user.findMany({
+            where: { isAlumni: true },
+            orderBy: { admissionYear: 'desc' },
+            select: {
+                id: true,
+                name: true,
+                course: true,
+                admissionYear: true,
+                bio: true,
+                quotes: true,
+                photoUrl: true,
+                linkedin: true,
+                email: true,
+            }
+        });
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch alumni data');
-        }
-
-        const data = await response.json() as AlumniType[];
-        return data.filter((item) => item.membership_status === "alumni");
+        return alumni.map((a) => ({
+            id: a.id,
+            full_name: a.name,
+            course: a.course,
+            admission_year: a.admissionYear ?? 2020,
+            bio: a.bio ?? "",
+            skills: a.quotes ?? "",
+            photo_url: a.photoUrl ?? "",
+            linkedin_url: a.linkedin ?? "",
+            email: a.email,
+            membership_status: "alumni"
+        }));
     } catch (error) {
         console.error('Error fetching alumni:', error);
         return [];

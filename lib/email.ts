@@ -12,7 +12,8 @@ export const sendOTPVerificationEmail = async (email: string, otp: string) => {
 };
 
 export const sendPasswordResetEmail = async (email: string, token: string) => {
-  const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+  const resetLink = `${appUrl}/reset-password?token=${token}`;
   await resend.emails.send({
     from: "Nyekusa <contact@mail.riverpen.com>",
     to: email,

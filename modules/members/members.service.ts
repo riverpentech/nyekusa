@@ -23,6 +23,8 @@ type ApiMemberInput = {
     instagram?: string | null;
     tiktok?: string | null;
     github?: string | null;
+    is_alumni?: boolean;
+    admission_year?: number;
 };
 
 type MemberListQuery = {
@@ -80,6 +82,8 @@ function toApiMember(user: SafeMember) {
         instagram: user.instagram,
         tiktok: user.tiktok,
         github: user.github,
+        is_alumni: user.isAlumni,
+        admission_year: user.admissionYear,
     };
 }
 
@@ -111,6 +115,10 @@ function toDbData(payload: ApiMemberInput) {
     if (payload.instagram !== undefined) data.instagram = payload.instagram;
     if (payload.tiktok !== undefined) data.tiktok = payload.tiktok;
     if (payload.github !== undefined) data.github = payload.github;
+    if (payload.is_alumni !== undefined) data.isAlumni = Boolean(payload.is_alumni);
+    if (payload.admission_year !== undefined) {
+        data.admissionYear = payload.admission_year ? parseInt(String(payload.admission_year), 10) : null;
+    }
     return data;
 }
 
@@ -126,10 +134,11 @@ function normalizeStatus(status?: string) {
 function normalizeRole(role?: string) {
     if (!role) return undefined;
     const upper = String(role).toUpperCase();
+    if (upper === "ALL") return "ALL";
     if (!ROLES.includes(upper)) {
         throw new ValidationError(`role must be one of ${ROLES.join(", ")}`);
     }
-    return upper as Role;
+    return upper;
 }
 
 function validateMemberInput(payload: ApiMemberInput, { partial = false } = {}) {
@@ -183,7 +192,13 @@ export const memberService = {
         const where: Prisma.UserWhereInput = {};
 
         const normalizedRole = normalizeRole(role);
-        where.role = normalizedRole ? normalizedRole : { in: MEMBER_ROLES };
+        if (normalizedRole === "ALL") {
+            // No role constraint, lists all roles
+        } else if (normalizedRole) {
+            where.role = normalizedRole as Role;
+        } else {
+            where.role = { in: MEMBER_ROLES };
+        }
 
         const isVerified = normalizeStatus(status);
         if (isVerified !== undefined) where.isVerified = isVerified;

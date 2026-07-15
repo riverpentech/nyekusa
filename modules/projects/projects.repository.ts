@@ -42,5 +42,41 @@ export const projectRepository = {
                 tasks: true
             }
         });
+    },
+
+    async findById(id: string) {
+        return prisma.project.findUnique({
+            where: { id },
+            include: {
+                tasks: {
+                    include: {
+                        assignedTo: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                photoUrl: true,
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    async update(id: string, data: Prisma.ProjectUpdateInput) {
+        return prisma.project.update({
+            where: { id },
+            data,
+            include: {
+                tasks: true
+            }
+        });
+    },
+
+    async remove(id: string) {
+        return prisma.project.delete({
+            where: { id }
+        });
     }
 };

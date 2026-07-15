@@ -22,7 +22,10 @@ export const AuthCard = () => {
   const pathname = usePathname();
   const token = searchParams.get("token");
   const isRegisterPage = pathname.includes("/join");
-  const [mode, setMode] = useState<AuthMode>(token ? "RESET" : isRegisterPage ? "REGISTER" : "LOGIN");
+  const isForgotPage = pathname.includes("/forgot-password");
+  const [mode, setMode] = useState<AuthMode>(
+    token ? "RESET" : isForgotPage ? "FORGOT" : isRegisterPage ? "REGISTER" : "LOGIN"
+  );
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
@@ -131,7 +134,13 @@ export const AuthCard = () => {
           toast.success(data.success, {
             description: "Your password has been reset! Redirecting to login...",
           });
-          setTimeout(() => setMode("LOGIN"), 2000);
+          setTimeout(() => {
+            if (pathname.includes("/reset-password")) {
+              router.push("/signin");
+            } else {
+              setMode("LOGIN");
+            }
+          }, 2000);
         }
       });
     });
@@ -247,7 +256,13 @@ export const AuthCard = () => {
             <h2 className="text-2xl font-bold text-primary mb-2">Reset Password</h2>
             <p className="text-muted-foreground mb-6">Enter your email to receive a reset link</p>
             <ForgotForm onSubmit={onForgot} isPending={isPending} />
-            <button onClick={() => setMode("LOGIN")} className="mt-6 text-sm text-primary hover:underline w-full text-center">Back to Login</button>
+            <button onClick={() => {
+              if (pathname.includes("/forgot-password")) {
+                router.push("/signin");
+              } else {
+                setMode("LOGIN");
+              }
+            }} className="mt-6 text-sm text-primary hover:underline w-full text-center">Back to Login</button>
           </motion.div>
         )}
 

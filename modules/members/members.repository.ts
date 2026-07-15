@@ -25,6 +25,8 @@ const SAFE_SELECT = {
     instagram: true,
     tiktok: true,
     github: true,
+    isAlumni: true,
+    admissionYear: true,
 };
 
 export const memberRepository = {

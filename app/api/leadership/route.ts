@@ -18,3 +18,30 @@ export async function GET(request: Request) {
         );
     }
 }
+
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        const { userId, title, term, bio, priority } = body;
+
+        if (!userId || !title || !term) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        const newLeader = await leadershipService.createLeader({
+            userId,
+            title,
+            term,
+            bio,
+            priority: priority ? parseInt(String(priority)) : 0,
+        });
+
+        return NextResponse.json(newLeader, { status: 201 });
+    } catch (error) {
+        console.error('Error creating leadership entry:', error);
+        return NextResponse.json(
+            { error: 'Failed to create leadership entry' },
+            { status: 500 }
+        );
+    }
+}

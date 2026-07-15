@@ -43,5 +43,31 @@ export const projectService = {
             startDate: startDate ? new Date(startDate) : null,
             endDate: endDate ? new Date(endDate) : null,
         });
+    },
+
+    async updateProject(id: string, body: Partial<ProjectInput>) {
+        const { title, description, status, budget, startDate, endDate } = body;
+        const data: any = {};
+        
+        if (title !== undefined) data.title = title.trim();
+        if (description !== undefined) data.description = description.trim();
+        if (status !== undefined) {
+            if (Object.values(ProjectStatus).includes(status.toUpperCase() as ProjectStatus)) {
+                data.status = status.toUpperCase() as ProjectStatus;
+            }
+        }
+        if (budget !== undefined) data.budget = budget ? parseFloat(String(budget)) : 0.0;
+        if (startDate !== undefined) data.startDate = startDate ? new Date(startDate) : null;
+        if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
+
+        return projectRepository.update(id, data);
+    },
+
+    async deleteProject(id: string) {
+        return projectRepository.remove(id);
+    },
+
+    async getProject(id: string) {
+        return projectRepository.findById(id);
     }
 };

@@ -12,6 +12,12 @@ import {
     LogOut,
     ArrowLeft,
     Shield,
+    Award,
+    GraduationCap,
+    Briefcase,
+    Lightbulb,
+    MessageSquare,
+    CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -19,6 +25,12 @@ const navItems = [
     { name: "Image Management", href: "/admin/image-management", icon: ImageIcon },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Events", href: "/admin/events", icon: Calendar },
+    { name: "Alumni", href: "/admin/alumni", icon: GraduationCap },
+    { name: "Leadership", href: "/admin/leadership", icon: Award },
+    { name: "Projects", href: "/admin/projects", icon: Briefcase },
+    { name: "Opportunities", href: "/admin/opportunities", icon: Lightbulb },
+    { name: "Payments", href: "/admin/payments", icon: CreditCard },
+    { name: "Messages", href: "/admin/messages", icon: MessageSquare },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

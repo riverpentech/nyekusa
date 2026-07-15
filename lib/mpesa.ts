@@ -1,36 +1,15 @@
 import axios from "axios";
 
-const CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY;
-const CONSUMER_SECRET = process.env.MPESA_SECRET_KEY; // Using MPESA_SECRET_KEY from .env
-const SHORTCODE = process.env.MPESA_SHORTCODE || "174379"; // Standard M-Pesa Sandbox Shortcode
-const PASSKEY = process.env.MPESA_PASSKEY || "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"; // Standard M-Pesa Sandbox Passkey
-const CALLBACK_URL = process.env.MPESA_CALLBACK_URL || `${process.env.NEXT_PUBLIC_APP_URL}/api/mpesa/callback`;
+const LIPA_NA_RIVERPEN_KEY = process.env.LIPA_NA_RIVERPEN_KEY;
+const LIPA_NA_RIVERPEN_URL = process.env.LIPA_NA_RIVERPEN_URL || "https://platform.riverpen.com";
 
-const getAccessToken = async () => {
-  const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString("base64");
-  try {
-    const response = await axios.get(
-      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-        },
-      }
-    );
-    return response.data.access_token;
-  } catch (error) {
-    console.error("M-Pesa Auth Error", error);
-    throw new Error("Failed to get M-Pesa access token");
+export const initiateStkPush = async (phoneNumber: string, amount: number, reference?: string) => {
+  if (!LIPA_NA_RIVERPEN_KEY) {
+    throw new Error("LIPA_NA_RIVERPEN_KEY is not configured in .env file");
   }
-};
-
-export const initiateStkPush = async (phoneNumber: string, amount: number) => {
-  const token = await getAccessToken();
-  const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
-  const password = Buffer.from(`${SHORTCODE}${PASSKEY}${timestamp}`).toString("base64");
 
   // Normalize phone number to 254...
-  let formattedPhone = phoneNumber;
+  let formattedPhone = phoneNumber.trim().replace(/\D/g, "");
   if (formattedPhone.startsWith("0")) {
     formattedPhone = "254" + formattedPhone.slice(1);
   } else if (formattedPhone.startsWith("+")) {
@@ -38,31 +17,39 @@ export const initiateStkPush = async (phoneNumber: string, amount: number) => {
   }
 
   try {
+    const url = `${LIPA_NA_RIVERPEN_URL.replace(/\/$/, "")}/api/v1/stk/push`;
+    console.log(`Initiating STK Push via Lipa na RiverPen: ${url}`);
+    
     const response = await axios.post(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      url,
       {
-        BusinessShortCode: SHORTCODE,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
-        Amount: amount,
-        PartyA: formattedPhone,
-        PartyB: SHORTCODE,
-        PhoneNumber: formattedPhone,
-        CallBackURL: CALLBACK_URL,
-        AccountReference: "Nyekusa Registration",
-        TransactionDesc: "Registration Fee",
+        amount: amount,
+        phoneNumber: formattedPhone,
+        reference: reference || null,
       },
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${LIPA_NA_RIVERPEN_KEY}`,
+          "Content-Type": "application/json",
         },
       }
     );
-    return response.data;
-  } catch (error: unknown) {
-    const message = axios.isAxiosError(error) ? error.response?.data || error.message : error;
-    console.error("M-Pesa STK Push Error", message);
-    throw new Error("Failed to initiate M-Pesa STK push");
+
+    // Map Lipa na RiverPen response structure back to Safaricom's expected shape for Nyekusa
+    const data = response.data;
+    return {
+      CheckoutRequestID: data.checkoutRequestId,
+      ResponseCode: data.success ? "0" : "1",
+      CustomerMessage: data.message || "STK Push initiated successfully",
+      ResponseDescription: data.message || "STK Push initiated successfully",
+    };
+  } catch (error: any) {
+    const responseData = axios.isAxiosError(error) ? error.response?.data : null;
+    console.error("Lipa na RiverPen STK Push Error:", responseData || error.message);
+    throw new Error(
+      responseData?.message || 
+      responseData?.error || 
+      "Failed to initiate STK push via Lipa na RiverPen"
+    );
   }
 };
