@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const LIPA_NA_RIVERPEN_KEY = process.env.LIPA_NA_RIVERPEN_KEY;
-const LIPA_NA_RIVERPEN_URL = process.env.LIPA_NA_RIVERPEN_URL || "https://platform.riverpen.com";
+const LIPA_NA_RIVERPEN_URL = process.env.LIPA_NA_RIVERPEN_URL || "https://lipa.riverpen.com";
 
 export const initiateStkPush = async (phoneNumber: string, amount: number, reference?: string) => {
   if (!LIPA_NA_RIVERPEN_KEY) {

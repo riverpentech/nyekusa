@@ -40,6 +40,7 @@ export default function AuthLayout({
             src="/school-gate.webp"
             alt="School Gate"
             fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover"
             priority
           />
@@ -82,6 +83,7 @@ export default function AuthLayout({
               alt="Nyekusa Logo"
               width={600}
               height={600}
+              priority
               className="w-full max-w-[80%] h-auto rotate-12 scale-110"
             />
           </div>
