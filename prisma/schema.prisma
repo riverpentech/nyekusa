@@ -248,13 +248,15 @@ model ContactMessage {
 }
 
 model PaymentCategory {
-  id        String   @id @default(cuid())
-  code      String   @unique // e.g. "MEMBERSHIP", "HIKE", "CHALLENGE_10_BOB"
-  name      String
-  amount    Float
-  isLocked  Boolean  @default(false)
-  minAmount Float    @default(0.0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  code            String    @unique // e.g. "MEMBERSHIP", "HIKE", "CHALLENGE_10_BOB"
+  name            String
+  amount          Float
+  mandatoryAmount Float     @default(0.0)
+  isLocked        Boolean   @default(false)
+  minAmount       Float     @default(0.0)
+  isActive        Boolean   @default(true)
+  deadline        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }

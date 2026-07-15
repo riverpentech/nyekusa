@@ -14,12 +14,6 @@ interface Event {
     category: keyof typeof categoryColors | "other";
 }
 
-const FALLBACK_EVENTS: Event[] = [
-    { id: "1", title: "Chinga Dams Hike", date: "2026-07-15T09:00:00", venue: "Chinga Dams", category: "sports" },
-    { id: "2", title: "Career & Mentorship initiative", date: "2026-07-28T10:00:00", venue: "St. Loundes Girls High School", category: "career" },
-    { id: "3", title: "End of Semester Bash", date: "2026-08-07T08:00:00", venue: "School Farm", category: "social" },
-];
-
 const categoryColors = {
     social: "bg-secondary/20 text-secondary-foreground",
     academic: "bg-blue-50 text-blue-700",
@@ -29,6 +23,15 @@ const categoryColors = {
     community: "bg-accent text-accent-foreground",
     other: "bg-muted text-muted-foreground"
 } as const;
+
+const getCategory = (title: string): keyof typeof categoryColors | "other" => {
+    const lower = title.toLowerCase();
+    if (lower.includes("hike") || lower.includes("sports") || lower.includes("gala") || lower.includes("run")) return "sports";
+    if (lower.includes("career") || lower.includes("mentorship") || lower.includes("workshop") || lower.includes("job") || lower.includes("cv")) return "career";
+    if (lower.includes("cultural") || lower.includes("culture") || lower.includes("tradition")) return "cultural";
+    if (lower.includes("induction") || lower.includes("welcome") || lower.includes("freshers")) return "social";
+    return "social";
+};
 
 const formatEventDate = (dateString: string): string => {
     try {
@@ -50,19 +53,24 @@ const formatEventDate = (dateString: string): string => {
 
 const fetchEvents = async (limit: number = 3): Promise<Event[]> => {
     try {
-        const response = await fetch(`/api/events?limit=${limit}`, {
-            next: { revalidate: 60 }
-        });
+        const response = await fetch(`/api/events?limit=${limit}`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        return data.events || [];
+        const dbEvents = data.events || [];
+        return dbEvents.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            date: e.eventDate,
+            venue: e.location,
+            category: getCategory(e.title)
+        }));
     } catch (error) {
         console.error("Failed to fetch events:", error);
-        return FALLBACK_EVENTS;
+        return [];
     }
 };
 
@@ -80,7 +88,7 @@ export default function EventsPreview() {
                 setEvents(data);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load events");
-                setEvents(FALLBACK_EVENTS);
+                setEvents([]);
             } finally {
                 setLoading(false);
             }
@@ -112,7 +120,7 @@ export default function EventsPreview() {
         );
     }
 
-    const displayEvents = events.length > 0 ? events : FALLBACK_EVENTS;
+    const displayEvents = events;
 
     return (
         <section className="py-20 sm:py-28 bg-muted/30">
@@ -125,38 +133,46 @@ export default function EventsPreview() {
 
                 {error && (
                     <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg text-sm">
-                        {error} - Showing fallback events
+                        {error}
                     </div>
                 )}
 
-                <div className="grid md:grid-cols-3 gap-6 mb-10">
-                    {displayEvents.map((event) => (
-                        <Link
-                            key={event.id}
-                            href={`/events/${event.id}`} // More specific route
-                            className="group bg-card rounded-xl border border-border/50 p-6 hover:border-primary/20 hover:shadow-sm transition-all"
-                        >
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${categoryColors[event.category] || categoryColors.other}`}>
-                                    {event.category}
-                                </span>
-                            </div>
-                            <h3 className="font-heading text-lg font-semibold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                                {event.title}
-                            </h3>
-                            <div className="space-y-1.5 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="truncate">{formatEventDate(event.date)}</span>
+                {displayEvents.length > 0 ? (
+                    <div className="grid md:grid-cols-3 gap-6 mb-10">
+                        {displayEvents.map((event) => (
+                            <Link
+                                key={event.id}
+                                href={`/events/${event.id}`}
+                                className="group bg-card rounded-xl border border-border/50 p-6 hover:border-primary/20 hover:shadow-sm transition-all"
+                            >
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${categoryColors[event.category] || categoryColors.other}`}>
+                                        {event.category}
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="truncate">{event.venue}</span>
+                                <h3 className="font-heading text-lg font-semibold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                                    {event.title}
+                                </h3>
+                                <div className="space-y-1.5 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="truncate">{formatEventDate(event.date)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="truncate">{event.venue}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 bg-card rounded-xl border border-dashed border-border mb-10">
+                        <Calendar className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                        <h4 className="font-semibold text-foreground text-base">No upcoming events scheduled</h4>
+                        <p className="text-xs text-muted-foreground mt-1">Please check back later or view past events.</p>
+                    </div>
+                )}
 
                 <div className="text-center">
                     <Link href="/events">

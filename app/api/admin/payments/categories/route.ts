@@ -32,20 +32,26 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { code, name, amount, isLocked, minAmount, isActive } = body;
+        const { code, name, amount, mandatoryAmount, isLocked, minAmount, isActive, deadline } = body;
 
         if (!code || !name) {
             return NextResponse.json({ error: "Code and Name are required" }, { status: 400 });
         }
 
+        const parsedAmount = parseFloat(amount);
+        const parsedMandatoryAmount = parseFloat(mandatoryAmount);
+        const parsedMinAmount = parseFloat(minAmount);
+
         const category = await prisma.paymentCategory.create({
             data: {
                 code: code.trim().toUpperCase(),
                 name: name.trim(),
-                amount: parseFloat(amount),
+                amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+                mandatoryAmount: isNaN(parsedMandatoryAmount) ? 0 : parsedMandatoryAmount,
                 isLocked: Boolean(isLocked),
-                minAmount: parseFloat(minAmount || 0),
+                minAmount: isNaN(parsedMinAmount) ? 0 : parsedMinAmount,
                 isActive: isActive !== undefined ? Boolean(isActive) : true,
+                deadline: deadline ? new Date(deadline) : null,
             }
         });
 

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 type Payment = {
     id: string;
@@ -38,9 +39,11 @@ type PaymentCategory = {
     code: string;
     name: string;
     amount: number;
+    mandatoryAmount: number;
     isLocked: boolean;
     minAmount: number;
     isActive: boolean;
+    deadline?: string | null;
 };
 
 const PURPOSE_LABELS: Record<string, string> = {
@@ -112,6 +115,7 @@ export default function PaymentsPage() {
         } catch (err) {
             console.error("Error loading payments data:", err);
             setError("Could not load your payment history. Please reload the page.");
+            toast.error("Could not load payment configurations or history.");
         } finally {
             setIsLoading(false);
         }
@@ -130,6 +134,19 @@ export default function PaymentsPage() {
         const cat = categories.find(c => c.code === selectedCode);
         if (cat) {
             setAmount(cat.amount.toString());
+        }
+    };
+
+    const handleQuickPay = (catCode: string, remainingAmount: number) => {
+        setPurpose(catCode);
+        const cat = categories.find(c => c.code === catCode);
+        if (cat) {
+            const suggestedAmount = Math.max(cat.minAmount, Math.min(remainingAmount, cat.amount));
+            setAmount(suggestedAmount.toString());
+        }
+        const formElement = document.getElementById("contribution-form");
+        if (formElement) {
+            formElement.scrollIntoView({ behavior: "smooth" });
         }
     };
 
@@ -187,7 +204,9 @@ export default function PaymentsPage() {
 
         } catch (err) {
             console.error("Error initiating payment:", err);
-            setError(err instanceof Error ? err.message : "M-Pesa STK Push request failed.");
+            const msg = err instanceof Error ? err.message : "M-Pesa STK Push request failed.";
+            setError(msg);
+            toast.error(msg);
             setIsInitiating(false);
         }
     };
@@ -208,17 +227,20 @@ export default function PaymentsPage() {
                 clearInterval(pollingIntervalRef.current!);
                 setPollingStatus("SUCCESS");
                 setIsInitiating(false);
+                toast.success("Payment completed and verified successfully!");
                 fetchPaymentsAndProfile(); // Refresh table and status
             } else if (data.status === "FAILED") {
                 clearInterval(pollingIntervalRef.current!);
                 setPollingStatus("FAILED");
                 setIsInitiating(false);
+                toast.error("M-Pesa transaction was cancelled or failed.");
                 fetchPaymentsAndProfile(); // Refresh table
             } else if (pollingCountRef.current > 20) {
                 // Timeout after 60 seconds (20 polls * 3s)
                 clearInterval(pollingIntervalRef.current!);
                 setPollingStatus("TIMEOUT");
                 setIsInitiating(false);
+                toast.warning("Verification timed out. Check your transaction logs shortly.");
                 fetchPaymentsAndProfile(); // Refresh table
             }
         } catch (err) {
@@ -311,10 +333,106 @@ export default function PaymentsPage() {
                 </div>
             )}
 
+            {/* Payment Progress Tracker (Installments/Bits Tracker) */}
+            {categories.filter(c => c.isActive && c.mandatoryAmount > 0).length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <Clock className="h-5 w-5 text-emerald-800" />
+                            Installment & Progress Tracker
+                        </h3>
+                        <p className="text-slate-500 text-xs mt-1">
+                            Track your payments for specific events, hikes, or dues. You can pay in custom installment amounts before each deadline.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {categories
+                            .filter(c => c.isActive && c.mandatoryAmount > 0)
+                            .map((cat) => {
+                                const totalPaid = payments
+                                    .filter(p => (p.categoryCode === cat.code || (cat.code === "MEMBERSHIP" && p.purpose === "MEMBERSHIP")) && p.status === "COMPLETED")
+                                    .reduce((sum, p) => sum + p.amount, 0);
+                                
+                                const remaining = Math.max(0, cat.mandatoryAmount - totalPaid);
+                                const progressPct = Math.min(100, (totalPaid / cat.mandatoryAmount) * 100);
+                                const isCompleted = totalPaid >= cat.mandatoryAmount;
+                                const isExpired = cat.deadline ? new Date() > new Date(cat.deadline) : false;
+
+                                let statusLabel = "Not Started";
+                                let statusColor = "bg-slate-100 text-slate-700";
+
+                                if (isCompleted) {
+                                    statusLabel = "Completed";
+                                    statusColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                                } else if (totalPaid > 0) {
+                                    if (isExpired) {
+                                        statusLabel = "Incomplete (Expired)";
+                                        statusColor = "bg-red-50 text-red-700 border border-red-200";
+                                    } else {
+                                        statusLabel = "In Progress";
+                                        statusColor = "bg-amber-50 text-amber-700 border border-amber-200";
+                                    }
+                                } else if (isExpired) {
+                                    statusLabel = "Expired";
+                                    statusColor = "bg-red-50 text-red-700 border border-red-200";
+                                }
+
+                                return (
+                                    <div key={cat.id} className="border border-slate-150 rounded-xl p-5 bg-slate-50/30 space-y-4 hover:shadow-md transition-shadow">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 text-sm leading-tight">{cat.name}</h4>
+                                                <p className="text-[11px] text-slate-400 font-mono mt-0.5">{cat.code}</p>
+                                            </div>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor}`}>
+                                                {statusLabel}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between text-xs font-semibold text-slate-755">
+                                                <span>Progress</span>
+                                                <span>{progressPct.toFixed(0)}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-100 rounded-full h-2">
+                                                <div 
+                                                    className="bg-emerald-800 h-2 rounded-full transition-all duration-500" 
+                                                    style={{ width: `${progressPct}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-[11px] text-slate-500 pt-1">
+                                                <span>Paid: KES {totalPaid.toFixed(0)}</span>
+                                                <span>Goal: KES {cat.mandatoryAmount.toFixed(0)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center text-[10px] text-slate-450 border-t border-slate-100 pt-3">
+                                            <div>
+                                                <span className="font-semibold">Deadline:</span>{" "}
+                                                {cat.deadline ? new Date(cat.deadline).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "No Deadline"}
+                                            </div>
+                                            
+                                            {!isCompleted && !isExpired && (
+                                                <button
+                                                    onClick={() => handleQuickPay(cat.code, remaining)}
+                                                    className="text-xs text-emerald-800 hover:text-emerald-950 font-bold hover:underline font-semibold"
+                                                >
+                                                    Pay Installment
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                </div>
+            )}
+
             {/* Content Split Layout */}
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Pay Form Card */}
-                <div className="lg:col-span-1 bg-white rounded-xl border border-slate-200 p-6 shadow-sm h-fit space-y-6">
+                <div id="contribution-form" className="lg:col-span-1 bg-white rounded-xl border border-slate-200 p-6 shadow-sm h-fit space-y-6">
                     <div>
                         <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                             <Coins className="h-5 w-5 text-emerald-800" />

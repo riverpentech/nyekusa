@@ -17,15 +17,26 @@ export async function PATCH(
 
         const { id } = await params;
         const body = await request.json();
-        const { code, name, amount, isLocked, minAmount, isActive } = body;
+        const { code, name, amount, mandatoryAmount, isLocked, minAmount, isActive, deadline } = body;
 
         const data: any = {};
         if (code !== undefined) data.code = code.trim().toUpperCase();
         if (name !== undefined) data.name = name.trim();
-        if (amount !== undefined) data.amount = parseFloat(amount);
+        if (amount !== undefined) {
+            const parsed = parseFloat(amount);
+            data.amount = isNaN(parsed) ? 0 : parsed;
+        }
+        if (mandatoryAmount !== undefined) {
+            const parsed = parseFloat(mandatoryAmount);
+            data.mandatoryAmount = isNaN(parsed) ? 0 : parsed;
+        }
+        if (minAmount !== undefined) {
+            const parsed = parseFloat(minAmount);
+            data.minAmount = isNaN(parsed) ? 0 : parsed;
+        }
         if (isLocked !== undefined) data.isLocked = Boolean(isLocked);
-        if (minAmount !== undefined) data.minAmount = parseFloat(minAmount);
         if (isActive !== undefined) data.isActive = Boolean(isActive);
+        if (deadline !== undefined) data.deadline = deadline ? new Date(deadline) : null;
 
         const category = await prisma.paymentCategory.update({
             where: { id },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { User } from 'lucide-react';
 
 interface AvatarProps {
     fullName: string;
@@ -92,7 +93,7 @@ export default function Avatar({
             className={`${sizeClasses} rounded-full flex items-center justify-center font-heading font-bold border-2 border-border ${bg} ${text} ${className}`}
             aria-label={fullName}
         >
-            {initials}
+            {initials === '?' ? <User className="w-1/2 h-1/2" /> : initials}
         </div>
     );
 }

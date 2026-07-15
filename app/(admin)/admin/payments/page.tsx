@@ -49,9 +49,11 @@ interface PaymentCategory {
     code: string;
     name: string;
     amount: number;
+    mandatoryAmount: number;
     isLocked: boolean;
     minAmount: number;
     isActive: boolean;
+    deadline?: string | null;
 }
 
 export default function AdminPaymentsPage() {
@@ -81,9 +83,11 @@ export default function AdminPaymentsPage() {
     const [catCode, setCatCode] = useState("");
     const [catName, setCatName] = useState("");
     const [catAmount, setCatAmount] = useState("0");
+    const [catMandatoryAmount, setCatMandatoryAmount] = useState("0");
     const [catIsLocked, setCatIsLocked] = useState(false);
     const [catMinAmount, setCatMinAmount] = useState("0");
     const [catIsActive, setCatIsActive] = useState(true);
+    const [catDeadline, setCatDeadline] = useState("");
     const [catSubmitting, setCatSubmitting] = useState(false);
 
     // Filters
@@ -137,16 +141,20 @@ export default function AdminPaymentsPage() {
             setCatCode(category.code);
             setCatName(category.name);
             setCatAmount(category.amount.toString());
+            setCatMandatoryAmount((category.mandatoryAmount || 0).toString());
             setCatIsLocked(category.isLocked);
             setCatMinAmount(category.minAmount.toString());
             setCatIsActive(category.isActive);
+            setCatDeadline(category.deadline ? new Date(category.deadline).toISOString().substring(0, 16) : "");
         } else {
             setCatCode("");
             setCatName("");
             setCatAmount("100");
+            setCatMandatoryAmount("0");
             setCatIsLocked(false);
             setCatMinAmount("10");
             setCatIsActive(true);
+            setCatDeadline("");
         }
         setIsCatModalOpen(true);
     };
@@ -210,9 +218,11 @@ export default function AdminPaymentsPage() {
                 code: catCode.trim().toUpperCase(),
                 name: catName.trim(),
                 amount: parseFloat(catAmount),
+                mandatoryAmount: parseFloat(catMandatoryAmount || "0"),
                 isLocked: catIsLocked,
                 minAmount: parseFloat(catMinAmount || "0"),
-                isActive: catIsActive
+                isActive: catIsActive,
+                deadline: catDeadline ? new Date(catDeadline).toISOString() : null
             };
 
             let res;
@@ -586,8 +596,10 @@ export default function AdminPaymentsPage() {
                                         <th className="px-6 py-3.5">Code</th>
                                         <th className="px-6 py-3.5">Name</th>
                                         <th className="px-6 py-3.5">Default Amount</th>
+                                        <th className="px-6 py-3.5">Mandatory Total</th>
                                         <th className="px-6 py-3.5">Behavior</th>
                                         <th className="px-6 py-3.5">Min Required</th>
+                                        <th className="px-6 py-3.5">Deadline</th>
                                         <th className="px-6 py-3.5">Active</th>
                                         <th className="px-6 py-3.5 text-right">Actions</th>
                                     </tr>
@@ -604,6 +616,9 @@ export default function AdminPaymentsPage() {
                                             <td className="px-6 py-3.5 font-semibold text-slate-900">
                                                 {formatCurrency(cat.amount)}
                                             </td>
+                                            <td className="px-6 py-3.5 font-bold text-emerald-800">
+                                                {cat.mandatoryAmount > 0 ? formatCurrency(cat.mandatoryAmount) : "— (Optional)"}
+                                            </td>
                                             <td className="px-6 py-3.5">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                                                     cat.isLocked 
@@ -615,6 +630,9 @@ export default function AdminPaymentsPage() {
                                             </td>
                                             <td className="px-6 py-3.5">
                                                 {cat.isLocked ? "—" : formatCurrency(cat.minAmount)}
+                                            </td>
+                                            <td className="px-6 py-3.5 font-medium text-slate-700">
+                                                {cat.deadline ? new Date(cat.deadline).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "No Deadline"}
                                             </td>
                                             <td className="px-6 py-3.5">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -881,6 +899,31 @@ export default function AdminPaymentsPage() {
                                         className="w-full rounded-lg border border-slate-205 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold disabled:bg-slate-50 disabled:text-slate-400"
                                     />
                                 </div>
+                             </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-650 uppercase tracking-wider block">Mandatory Total Amount (Optional)</label>
+                                <input
+                                    type="number"
+                                    value={catMandatoryAmount}
+                                    onChange={(e) => setCatMandatoryAmount(e.target.value)}
+                                    min="0"
+                                    placeholder="0"
+                                    className="w-full rounded-lg border border-slate-205 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
+                                />
+                                <p className="text-[10px] text-slate-400 font-normal">
+                                    Set &gt; 0 to require members to reach this goal amount and display installment progress cards. Keep at 0 for optional contribution categories.
+                                </p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-650 uppercase tracking-wider block">Payment Deadline (Optional)</label>
+                                <input
+                                    type="datetime-local"
+                                    value={catDeadline}
+                                    onChange={(e) => setCatDeadline(e.target.value)}
+                                    className="w-full rounded-lg border border-slate-205 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium"
+                                />
                             </div>
 
                             {/* Checkboxes */}

@@ -110,7 +110,11 @@ export default function DashboardSidebar({ isCollapsed, setIsCollapsed }: Sideba
             <div className="border-t border-slate-100 pt-4 space-y-2">
                 <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center px-0' : 'px-2'} py-1.5`}>
                     <div className="h-9 w-9 rounded-full bg-emerald-800 flex items-center justify-center text-sm font-semibold text-white shrink-0 shadow-sm">
-                        {getInitials(user?.name)}
+                        {getInitials(user?.name) === "?" ? (
+                            <UserIcon size={16} />
+                        ) : (
+                            getInitials(user?.name)
+                        )}
                     </div>
                     {!isCollapsed && (
                         <div className="min-w-0">

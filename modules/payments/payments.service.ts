@@ -52,12 +52,46 @@ export const paymentService = {
             where: { code: categoryCode }
         });
 
+        // Sum already completed payments for this user and category code
+        const completedPayments = await prisma.payment.findMany({
+            where: {
+                userId,
+                categoryCode,
+                status: "COMPLETED"
+            }
+        });
+        const alreadyPaid = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+
         if (category) {
+            // Check deadline
+            if (category.deadline && new Date() > new Date(category.deadline)) {
+                throw new ValidationError(`The deadline for ${category.name} has passed (${new Date(category.deadline).toLocaleDateString()})`);
+            }
+
+            if (category.mandatoryAmount > 0) {
+                const remaining = category.mandatoryAmount - alreadyPaid;
+
+                if (alreadyPaid >= category.mandatoryAmount) {
+                    throw new ValidationError(`You have already paid the required KES ${category.mandatoryAmount.toFixed(2)} for ${category.name} in full.`);
+                }
+
+                // If user attempts to pay more than the remaining balance
+                if (amount > remaining) {
+                    throw new ValidationError(`The remaining balance for ${category.name} is KES ${remaining.toFixed(2)}. You cannot pay KES ${amount.toFixed(2)}.`);
+                }
+
+                // Enforce minimum open amount per installment (unless they are paying the exact remaining balance)
+                if (category.minAmount > 0 && amount < category.minAmount && amount < remaining) {
+                    throw new ValidationError(`Minimum payment amount for ${category.name} is KES ${category.minAmount.toFixed(2)}.`);
+                }
+            } else {
+                if (category.minAmount > 0 && amount < category.minAmount) {
+                    throw new ValidationError(`Minimum payment amount for ${category.name} is KES ${category.minAmount.toFixed(2)}.`);
+                }
+            }
+
             if (category.isLocked && amount !== category.amount) {
                 throw new ValidationError(`Amount for ${category.name} is fixed at KES ${category.amount.toFixed(2)}`);
-            }
-            if (!category.isLocked && amount < category.minAmount) {
-                throw new ValidationError(`Minimum amount for ${category.name} is KES ${category.minAmount.toFixed(2)}`);
             }
         }
 
