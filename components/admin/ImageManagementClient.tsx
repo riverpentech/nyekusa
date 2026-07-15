@@ -11,7 +11,13 @@ import {
     X,
     Image as ImageIcon,
     RefreshCw,
-    Loader2
+    Loader2,
+    FolderPlus,
+    Link as LinkIcon,
+    Calendar,
+    ExternalLink,
+    Images,
+    FolderHeart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +28,10 @@ import {
     uploadImageAction,
     updateImageAction,
     replaceImageAction,
-    deleteImageAction
+    deleteImageAction,
+    createAlbumAction,
+    updateAlbumAction,
+    deleteAlbumAction
 } from "@/actions/gallery";
 
 type GalleryImage = {
@@ -38,8 +47,20 @@ type GalleryImage = {
     updatedAt: Date;
 };
 
+type GalleryAlbum = {
+    id: string;
+    title: string | null;
+    description: string | null;
+    category: string | null;
+    date: Date | null;
+    coverImage: string | null;
+    images: string; // Google Photos link
+    createdAt: Date;
+};
+
 type Props = {
     initialImages: GalleryImage[];
+    initialAlbums: GalleryAlbum[];
 };
 
 const CATEGORIES = [
@@ -185,20 +206,38 @@ function ImageDropzone({
     );
 }
 
-export default function ImageManagementClient({ initialImages }: Props) {
+export default function ImageManagementClient({ initialImages, initialAlbums }: Props) {
+    const [activeTab, setActiveTab] = useState<"IMAGES" | "ALBUMS">("IMAGES");
     const [images, setImages] = useState<GalleryImage[]>(initialImages);
+    const [albums, setAlbums] = useState<GalleryAlbum[]>(initialAlbums);
+
+    // Image-specific modal/form state
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
-    const [isPending, startTransition] = useTransition();
 
-    // Form states
+    // Form states (Images)
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("other");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [replaceFile, setReplaceFile] = useState<File | null>(null);
 
+    // Album-specific modal/form state
+    const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
+    const [editingAlbum, setEditingAlbum] = useState<GalleryAlbum | null>(null);
+
+    // Form states (Albums)
+    const [albumTitle, setAlbumTitle] = useState("");
+    const [albumDescription, setAlbumDescription] = useState("");
+    const [albumCategory, setAlbumCategory] = useState("social");
+    const [albumDate, setAlbumDate] = useState("");
+    const [albumCoverImage, setAlbumCoverImage] = useState("");
+    const [albumImages, setAlbumImages] = useState(""); // Google Photos Link
+
+    const [isPending, startTransition] = useTransition();
+
+    // IMAGE HANDLERS
     const handleUploadSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) {
@@ -305,88 +344,308 @@ export default function ImageManagementClient({ initialImages }: Props) {
         });
     };
 
+    // ALBUM HANDLERS
+    const handleAlbumEditClick = (album: GalleryAlbum) => {
+        setEditingAlbum(album);
+        setAlbumTitle(album.title || "");
+        setAlbumDescription(album.description || "");
+        setAlbumCategory(album.category || "social");
+        setAlbumDate(album.date ? new Date(album.date).toISOString().split("T")[0] : "");
+        setAlbumCoverImage(album.coverImage || "");
+        setAlbumImages(album.images || "");
+        setIsAlbumModalOpen(true);
+    };
+
+    const handleAlbumSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!albumTitle.trim()) {
+            toast.error("Album title is required.");
+            return;
+        }
+        if (!albumImages.trim()) {
+            toast.error("Google Photos album link is required.");
+            return;
+        }
+
+        const payload = {
+            title: albumTitle.trim(),
+            description: albumDescription.trim(),
+            category: albumCategory,
+            date: albumDate ? new Date(albumDate).toISOString() : undefined,
+            coverImage: albumCoverImage.trim(),
+            images: albumImages.trim()
+        };
+
+        startTransition(async () => {
+            let res;
+            if (editingAlbum) {
+                res = await updateAlbumAction({
+                    id: editingAlbum.id,
+                    ...payload
+                });
+            } else {
+                res = await createAlbumAction(payload);
+            }
+
+            if (res.error) {
+                toast.error(res.error);
+            } else if (res.success && res.album) {
+                toast.success(editingAlbum ? "Album updated successfully!" : "Album created successfully!");
+                
+                const formattedAlbum: GalleryAlbum = {
+                    id: res.album.id,
+                    title: res.album.title,
+                    description: res.album.description,
+                    category: res.album.category,
+                    date: res.album.date ? new Date(res.album.date) : null,
+                    coverImage: res.album.coverImage,
+                    images: res.album.images,
+                    createdAt: new Date(res.album.createdAt)
+                };
+
+                if (editingAlbum) {
+                    setAlbums(prev => prev.map(a => a.id === editingAlbum.id ? formattedAlbum : a));
+                } else {
+                    setAlbums(prev => [formattedAlbum, ...prev]);
+                }
+                setIsAlbumModalOpen(false);
+            }
+        });
+    };
+
+    const handleAlbumDeleteClick = (id: string, titleStr: string) => {
+        if (!confirm(`Are you sure you want to delete album "${titleStr}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        startTransition(async () => {
+            const res = await deleteAlbumAction(id);
+            if (res.error) {
+                toast.error(res.error);
+            } else {
+                toast.success("Album deleted successfully!");
+                setAlbums(prev => prev.filter(a => a.id !== id));
+            }
+        });
+    };
+
+    const sortedAlbums = [...albums].sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
+    });
+
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Header section */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Image Management</h2>
-                    <p className="text-slate-500 mt-1">Upload, edit details, replace, and organize public gallery images.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Gallery & Image Management</h2>
+                    <p className="text-slate-500 mt-1">Manage public landing page images and member-only Google Photo albums.</p>
                 </div>
-                <Button
-                    onClick={() => {
-                        setTitle("");
-                        setDescription("");
-                        setCategory("other");
-                        setSelectedFile(null);
-                        setIsUploadOpen(true);
-                    }}
-                    className="bg-emerald-800 hover:bg-emerald-950 text-white font-medium self-start sm:self-auto gap-2"
-                >
-                    <Plus className="h-4 w-4" /> Upload Image
-                </Button>
+                
+                {activeTab === "IMAGES" ? (
+                    <Button
+                        onClick={() => {
+                            setTitle("");
+                            setDescription("");
+                            setCategory("other");
+                            setSelectedFile(null);
+                            setIsUploadOpen(true);
+                        }}
+                        className="bg-emerald-800 hover:bg-emerald-950 text-white font-medium self-start sm:self-auto gap-2"
+                    >
+                        <Plus className="h-4 w-4" /> Upload Image
+                    </Button>
+                ) : (
+                    <Button
+                        onClick={() => {
+                            setEditingAlbum(null);
+                            setAlbumTitle("");
+                            setAlbumDescription("");
+                            setAlbumCategory("social");
+                            setAlbumDate(new Date().toISOString().split("T")[0]);
+                            setAlbumCoverImage("");
+                            setAlbumImages("");
+                            setIsAlbumModalOpen(true);
+                        }}
+                        className="bg-emerald-800 hover:bg-emerald-950 text-white font-medium self-start sm:self-auto gap-2"
+                    >
+                        <FolderPlus className="h-4 w-4" /> Add Member Album
+                    </Button>
+                )}
             </div>
 
-            {/* Gallery Image Grid */}
-            {images.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {images.map((image) => (
-                        <div key={image.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
-                            <div>
-                                <div className="h-48 overflow-hidden relative bg-slate-100">
-                                    <Image
-                                        src={image.url}
-                                        alt={image.title}
-                                        width={600}
-                                        height={400}
-                                        className="w-full h-full object-cover"
-                                        unoptimized
-                                    />
-                                    <Badge className="absolute top-3 left-3 bg-emerald-800 text-white border-0 hover:bg-emerald-800 shadow-sm capitalize">
-                                        {getCategoryLabel(image.category)}
-                                    </Badge>
-                                </div>
-                                <div className="p-4 space-y-2">
-                                    <h3 className="font-heading text-lg font-bold text-slate-800 line-clamp-1">{image.title}</h3>
-                                    {image.description ? (
-                                        <p className="text-sm text-slate-500 line-clamp-2">{image.description}</p>
-                                    ) : (
-                                        <p className="text-sm text-slate-400 italic">No description provided</p>
-                                    )}
-                                    <div className="text-xs text-slate-400 font-medium">
-                                        Size: {(image.fileSize / 1024 / 1024).toFixed(2)} MB • {image.mimeType.split("/")[1].toUpperCase()}
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab("IMAGES")}
+                    className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${
+                        activeTab === "IMAGES"
+                            ? "border-emerald-800 text-emerald-800"
+                            : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                    }`}
+                >
+                    <Images size={16} />
+                    Public Gallery Images ({images.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab("ALBUMS")}
+                    className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${
+                        activeTab === "ALBUMS"
+                            ? "border-emerald-800 text-emerald-800"
+                            : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                    }`}
+                >
+                    <FolderHeart size={16} />
+                    Member Albums (Google Photos) ({albums.length})
+                </button>
+            </div>
+
+            {/* TAB CONTENT: IMAGES */}
+            {activeTab === "IMAGES" && (
+                <>
+                    {images.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                            {images.map((image) => (
+                                <div key={image.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+                                    <div>
+                                        <div className="h-48 overflow-hidden relative bg-slate-100">
+                                            <Image
+                                                src={image.url}
+                                                alt={image.title}
+                                                width={600}
+                                                height={400}
+                                                className="w-full h-full object-cover"
+                                                unoptimized
+                                            />
+                                            <Badge className="absolute top-3 left-3 bg-emerald-800 text-white border-0 hover:bg-emerald-800 shadow-sm capitalize">
+                                                {getCategoryLabel(image.category)}
+                                            </Badge>
+                                        </div>
+                                        <div className="p-4 space-y-2">
+                                            <h3 className="font-heading text-lg font-bold text-slate-800 line-clamp-1">{image.title}</h3>
+                                            {image.description ? (
+                                                <p className="text-sm text-slate-500 line-clamp-2">{image.description}</p>
+                                            ) : (
+                                                <p className="text-sm text-slate-400 italic">No description provided</p>
+                                            )}
+                                            <div className="text-xs text-slate-400 font-medium">
+                                                Size: {(image.fileSize / 1024 / 1024).toFixed(2)} MB • {image.mimeType.split("/")[1].toUpperCase()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleEditClick(image)}
+                                            className="flex-1 gap-1.5 text-slate-700 hover:text-emerald-800"
+                                        >
+                                            <Edit2 className="h-3.5 w-3.5" /> Edit / Replace
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleDeleteClick(image.id)}
+                                            className="text-red-600 hover:bg-red-50 hover:text-red-700 border-slate-200 hover:border-red-200"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditClick(image)}
-                                    className="flex-1 gap-1.5 text-slate-700 hover:text-emerald-800"
-                                >
-                                    <Edit2 className="h-3.5 w-3.5" /> Edit / Replace
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDeleteClick(image.id)}
-                                    className="text-red-600 hover:bg-red-50 hover:text-red-700 border-slate-200 hover:border-red-200"
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-2xl">
-                    <ImageIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-800">No images uploaded yet</h3>
-                    <p className="text-slate-500 mt-1 max-w-sm mx-auto">Upload the first image stored directly in Supabase Storage to show on the public gallery.</p>
-                </div>
+                    ) : (
+                        <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-2xl">
+                            <ImageIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold text-slate-800">No images uploaded yet</h3>
+                            <p className="text-slate-500 mt-1 max-w-sm mx-auto">Upload the first image stored directly in Supabase Storage to show on the public gallery.</p>
+                        </div>
+                    )}
+                </>
             )}
 
-            {/* Custom Upload Modal */}
+            {/* TAB CONTENT: ALBUMS */}
+            {activeTab === "ALBUMS" && (
+                <>
+                    {sortedAlbums.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                            {sortedAlbums.map((album) => (
+                                <div key={album.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+                                    <div>
+                                        <div className="h-48 overflow-hidden relative bg-slate-100">
+                                            <Image
+                                                src={album.coverImage || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=400&fit=crop"}
+                                                alt={album.title || "Album Cover"}
+                                                width={600}
+                                                height={400}
+                                                className="w-full h-full object-cover"
+                                                unoptimized
+                                            />
+                                            <Badge className="absolute top-3 left-3 bg-emerald-800 text-white border-0 hover:bg-emerald-800 shadow-sm capitalize">
+                                                {getCategoryLabel(album.category)}
+                                            </Badge>
+                                        </div>
+                                        <div className="p-4 space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="font-heading text-lg font-bold text-slate-800 line-clamp-1">{album.title}</h3>
+                                                <a
+                                                    href={album.images}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-slate-400 hover:text-emerald-800 shrink-0"
+                                                    title="View album photos"
+                                                >
+                                                    <ExternalLink size={16} />
+                                                </a>
+                                            </div>
+                                            {album.description ? (
+                                                <p className="text-sm text-slate-500 line-clamp-2">{album.description}</p>
+                                            ) : (
+                                                <p className="text-sm text-slate-400 italic">No description provided</p>
+                                            )}
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                                                <Calendar size={13} />
+                                                {album.date ? new Date(album.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "No date"}
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 truncate max-w-full font-medium" title={album.images}>
+                                                Link: <span className="text-emerald-850 hover:underline">{album.images}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleAlbumEditClick(album)}
+                                            className="flex-1 gap-1.5 text-slate-700 hover:text-emerald-800"
+                                        >
+                                            <Edit2 className="h-3.5 w-3.5" /> Edit Album
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleAlbumDeleteClick(album.id, album.title || "")}
+                                            className="text-red-600 hover:bg-red-50 hover:text-red-700 border-slate-200 hover:border-red-200"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-2xl">
+                            <FolderHeart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold text-slate-800">No member albums created yet</h3>
+                            <p className="text-slate-500 mt-1 max-w-sm mx-auto">Link Google Photos albums for members to easily view, find, and download photos.</p>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* MODAL: IMAGE UPLOAD */}
             {isUploadOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
@@ -481,7 +740,7 @@ export default function ImageManagementClient({ initialImages }: Props) {
                 </div>
             )}
 
-            {/* Custom Edit / Replace Modal */}
+            {/* MODAL: IMAGE EDIT / REPLACE */}
             {isEditOpen && selectedImage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
@@ -592,6 +851,130 @@ export default function ImageManagementClient({ initialImages }: Props) {
                                         </>
                                     ) : (
                                         "Save Changes"
+                                    )}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: ALBUM ADD / EDIT */}
+            {isAlbumModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                <FolderPlus className="h-5 w-5 text-emerald-800" /> {editingAlbum ? "Edit Member Album" : "Add Member Album"}
+                            </h3>
+                            <button
+                                onClick={() => setIsAlbumModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 rounded-full p-1 hover:bg-slate-100 transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAlbumSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="album-title" className="text-slate-700 font-medium">Album Title *</Label>
+                                <Input
+                                    id="album-title"
+                                    placeholder="e.g. Hiking Adventure in Aberdares"
+                                    value={albumTitle}
+                                    onChange={(e) => setAlbumTitle(e.target.value)}
+                                    required
+                                    disabled={isPending}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="album-description" className="text-slate-700 font-medium">Description</Label>
+                                <Textarea
+                                    id="album-description"
+                                    placeholder="Brief description about what this album contains"
+                                    value={albumDescription}
+                                    onChange={(e) => setAlbumDescription(e.target.value)}
+                                    rows={3}
+                                    disabled={isPending}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="album-category" className="text-slate-700 font-medium">Category</Label>
+                                    <select
+                                        id="album-category"
+                                        value={albumCategory}
+                                        onChange={(e) => setAlbumCategory(e.target.value)}
+                                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-emerald-800"
+                                        disabled={isPending}
+                                    >
+                                        {CATEGORIES.map(cat => (
+                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="album-date" className="text-slate-700 font-medium">Event Date</Label>
+                                    <Input
+                                        id="album-date"
+                                        type="date"
+                                        value={albumDate}
+                                        onChange={(e) => setAlbumDate(e.target.value)}
+                                        disabled={isPending}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="album-cover" className="text-slate-700 font-medium">Cover Image URL (Optional)</Label>
+                                <Input
+                                    id="album-cover"
+                                    placeholder="https://images.unsplash.com/... or empty for default cover"
+                                    value={albumCoverImage}
+                                    onChange={(e) => setAlbumCoverImage(e.target.value)}
+                                    disabled={isPending}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="album-link" className="text-slate-700 font-medium">Google Photos Link *</Label>
+                                <div className="relative">
+                                    <Input
+                                        id="album-link"
+                                        placeholder="https://photos.app.goo.gl/..."
+                                        value={albumImages}
+                                        onChange={(e) => setAlbumImages(e.target.value)}
+                                        required
+                                        className="pl-9"
+                                        disabled={isPending}
+                                    />
+                                    <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                </div>
+                                <p className="text-[11px] text-slate-500 font-medium">Members will open this link when viewing the album from their dashboard.</p>
+                            </div>
+
+                            <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsAlbumModalOpen(false)}
+                                    disabled={isPending}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="bg-emerald-800 hover:bg-emerald-950 text-white font-medium gap-1.5"
+                                    disabled={isPending}
+                                >
+                                    {isPending ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" /> Saving...
+                                        </>
+                                    ) : (
+                                        "Save Album"
                                     )}
                                 </Button>
                             </div>

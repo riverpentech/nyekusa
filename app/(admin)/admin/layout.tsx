@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import AdminSidebar from "@/components/admin/AdminSidebar";
+import AdminLayoutWrapper from "@/components/admin/AdminLayoutWrapper";
 import {SessionProvider} from "next-auth/react";
 
 export default async function AdminLayout({
@@ -27,7 +27,7 @@ export default async function AdminLayout({
                     </p>
                     <Link
                         href="/dashboard"
-                        className="inline-flex justify-center rounded-lg text-sm font-semibold py-2.5 px-4 bg-emerald-800 text-white hover:bg-emerald-900 transition-colors"
+                        className="inline-flex justify-center rounded-lg text-sm font-semibold py-2.5 px-4 bg-emerald-800 text-white hover:bg-emerald-950 transition-colors"
                     >
                         Return to Member Dashboard
                     </Link>
@@ -38,14 +38,9 @@ export default async function AdminLayout({
 
     return (
         <SessionProvider>
-        <div className="flex min-h-screen bg-slate-50/50">
-            <AdminSidebar />
-            <main className="pl-64 w-full">
-                <div className="p-8 max-w-7xl mx-auto space-y-8">
-                    {children}
-                </div>
-            </main>
-        </div>
+            <AdminLayoutWrapper>
+                {children}
+            </AdminLayoutWrapper>
         </SessionProvider>
     );
 }

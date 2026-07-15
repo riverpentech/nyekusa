@@ -268,3 +268,93 @@ export async function deleteImageAction(id: string) {
         return { error: err.message || "Failed to delete image." };
     }
 }
+
+export async function createAlbumAction(data: {
+    title: string;
+    description?: string;
+    category?: string;
+    date?: string;
+    coverImage?: string;
+    images: string;
+}) {
+    try {
+        await checkAdminAuth();
+
+        const { title, description = "", category = "other", date, coverImage = "", images } = data;
+
+        if (!title || title.trim() === "") {
+            return { error: "Title is required." };
+        }
+        if (!images || images.trim() === "") {
+            return { error: "Google Photos album link is required." };
+        }
+
+        const album = await prisma.galleryAlbum.create({
+            data: {
+                title,
+                description,
+                category,
+                date: date ? new Date(date) : null,
+                coverImage,
+                images,
+            },
+        });
+
+        revalidatePath("/dashboard/gallery");
+        return { success: true, album };
+    } catch (err: any) {
+        console.error("Error in createAlbumAction:", err);
+        return { error: err.message || "Failed to create gallery album." };
+    }
+}
+
+export async function updateAlbumAction(data: {
+    id: string;
+    title?: string;
+    description?: string;
+    category?: string;
+    date?: string;
+    coverImage?: string;
+    images?: string;
+}) {
+    try {
+        await checkAdminAuth();
+
+        const { id, title, description, category, date, coverImage, images } = data;
+
+        const updateData: any = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (category !== undefined) updateData.category = category;
+        if (date !== undefined) updateData.date = date ? new Date(date) : null;
+        if (coverImage !== undefined) updateData.coverImage = coverImage;
+        if (images !== undefined) updateData.images = images;
+
+        const album = await prisma.galleryAlbum.update({
+            where: { id },
+            data: updateData,
+        });
+
+        revalidatePath("/dashboard/gallery");
+        return { success: true, album };
+    } catch (err: any) {
+        console.error("Error in updateAlbumAction:", err);
+        return { error: err.message || "Failed to update gallery album." };
+    }
+}
+
+export async function deleteAlbumAction(id: string) {
+    try {
+        await checkAdminAuth();
+
+        await prisma.galleryAlbum.delete({
+            where: { id },
+        });
+
+        revalidatePath("/dashboard/gallery");
+        return { success: true };
+    } catch (err: any) {
+        console.error("Error in deleteAlbumAction:", err);
+        return { error: err.message || "Failed to delete gallery album." };
+    }
+}

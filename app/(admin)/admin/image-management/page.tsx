@@ -22,5 +22,15 @@ export default async function AdminImageManagementPage() {
         }
     });
 
-    return <ImageManagementClient initialImages={images} />;
+    const albums = await prisma.galleryAlbum.findMany({
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
+
+    // Cast Date objects to ISO string or rely on React Server Component serialization
+    // Actually, prisma returns Date objects which are fully serializable since initialAlbums is passed to a client component.
+    // Next.js handles Date serialization, but to be safe, we can serialize dates if needed.
+    // Let's just pass them directly.
+    return <ImageManagementClient initialImages={images} initialAlbums={albums} />;
 }
