@@ -33,13 +33,14 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
-        const { title, term, bio, priority } = body;
+        const { title, term, bio, priority, fullName } = body;
 
         const updated = await leadershipService.updateLeader(id, {
             title,
             term,
             bio,
             priority: priority !== undefined ? parseInt(String(priority)) : undefined,
+            fullName,
         });
 
         return NextResponse.json(updated);

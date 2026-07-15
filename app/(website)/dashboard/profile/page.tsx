@@ -12,6 +12,7 @@ import {
     CheckCircle,
     Loader2
 } from "lucide-react";
+import CourseSelect from "@/components/shared/CourseSelect";
 
 export default function ProfilePage() {
     const { data: session } = useSession();
@@ -337,13 +338,10 @@ export default function ProfilePage() {
                         <div className="grid gap-4 sm:grid-cols-3">
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-medium text-slate-600 mb-1">Course Registered</label>
-                                <input
-                                    type="text"
-                                    name="course"
+                                <CourseSelect
                                     value={formData.course}
-                                    onChange={handleChange}
-                                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-emerald-800"
-                                    placeholder="e.g., BSc. Civil Engineering"
+                                    onChange={(val) => setFormData(prev => ({ ...prev, course: val }))}
+                                    placeholder="Select Course"
                                 />
                             </div>
 

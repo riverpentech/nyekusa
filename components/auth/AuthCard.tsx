@@ -13,6 +13,7 @@ import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import { toast } from "sonner";
+import CourseSelect from "@/components/shared/CourseSelect";
 
 type AuthMode = "LOGIN" | "REGISTER" | "PAYMENT" | "OTP" | "FORGOT" | "RESET";
 
@@ -322,9 +323,11 @@ const LoginForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof Login
 };
 
 const RegisterForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof RegisterSchema>) => void; isPending: boolean }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof RegisterSchema>>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
   });
+  const courseValue = watch("course") || "";
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -343,7 +346,13 @@ const RegisterForm = ({ onSubmit, isPending }: { onSubmit: (v: z.infer<typeof Re
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Input {...register("course")} placeholder="Course" disabled={isPending} />
+          <input type="hidden" {...register("course")} />
+          <CourseSelect
+            value={courseValue}
+            onChange={(val) => setValue("course", val, { shouldValidate: true })}
+            disabled={isPending}
+            placeholder="Course"
+          />
           {errors.course && <p className="text-xs text-destructive mt-1">{errors.course.message}</p>}
         </div>
         <div>

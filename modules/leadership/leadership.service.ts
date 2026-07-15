@@ -1,4 +1,5 @@
 import { leadershipRepository } from "@/modules/leadership/leadership.repository";
+import { prisma } from "@/lib/prisma";
 
 export const leadershipService = {
     async listLeaders(term?: string | null, limit: number = 50) {
@@ -39,7 +40,13 @@ export const leadershipService = {
         };
     },
 
-    async createLeader(data: { userId: string; title: string; term: string; bio?: string; priority?: number }) {
+    async createLeader(data: { userId: string; title: string; term: string; bio?: string; priority?: number; fullName?: string }) {
+        if (data.fullName) {
+            await prisma.user.update({
+                where: { id: data.userId },
+                data: { name: data.fullName.trim() }
+            });
+        }
         return leadershipRepository.create({
             user: { connect: { id: data.userId } },
             title: data.title,
@@ -49,7 +56,19 @@ export const leadershipService = {
         });
     },
 
-    async updateLeader(id: string, data: { title?: string; term?: string; bio?: string; priority?: number }) {
+    async updateLeader(id: string, data: { title?: string; term?: string; bio?: string; priority?: number; fullName?: string }) {
+        const record = await prisma.leadership.findUnique({
+            where: { id },
+            select: { userId: true }
+        });
+        
+        if (record && data.fullName !== undefined) {
+            await prisma.user.update({
+                where: { id: record.userId },
+                data: { name: data.fullName.trim() }
+            });
+        }
+
         return leadershipRepository.update(id, {
             title: data.title,
             term: data.term,

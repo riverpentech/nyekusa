@@ -51,6 +51,7 @@ export default function AdminLeadershipPage() {
     const [priority, setPriority] = useState("0");
     const [submitting, setSubmitting] = useState(false);
     const [memberSearch, setMemberSearch] = useState("");
+    const [leaderName, setLeaderName] = useState("");
 
     const fetchData = async () => {
         setLoading(true);
@@ -87,6 +88,7 @@ export default function AdminLeadershipPage() {
         setBio("");
         setPriority("0");
         setMemberSearch("");
+        setLeaderName("");
         setIsModalOpen(true);
     };
 
@@ -97,6 +99,7 @@ export default function AdminLeadershipPage() {
         setTerm(leader.term_year);
         setBio(leader.bio);
         setPriority(String(leader.order));
+        setLeaderName(leader.full_name);
         setIsModalOpen(true);
     };
 
@@ -120,6 +123,7 @@ export default function AdminLeadershipPage() {
                 term: term.trim(),
                 bio: bio.trim() || null,
                 priority: parseInt(priority) || 0,
+                fullName: leaderName.trim()
             };
 
             let res;
@@ -132,6 +136,7 @@ export default function AdminLeadershipPage() {
                         term: payload.term,
                         bio: payload.bio,
                         priority: payload.priority,
+                        fullName: payload.fullName,
                     }),
                 });
             } else {
@@ -335,6 +340,7 @@ export default function AdminLeadershipPage() {
                                                         onClick={() => {
                                                             setSelectedUserId(m.id);
                                                             setMemberSearch(m.full_name);
+                                                            setLeaderName(m.full_name);
                                                         }}
                                                         className={`w-full flex items-center justify-between p-2.5 text-left text-xs hover:bg-emerald-50 transition-colors ${
                                                             selectedUserId === m.id ? "bg-emerald-50/70 font-semibold text-emerald-900" : "text-slate-750"
@@ -353,10 +359,18 @@ export default function AdminLeadershipPage() {
                                 </div>
                             )}
 
-                            {editingLeader && (
+                            {(editingLeader || selectedUserId) && (
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-650 uppercase tracking-wider block">Appointed Member</label>
-                                    <p className="font-bold text-slate-900 bg-slate-50 px-3 py-2 rounded-lg border border-slate-150">{editingLeader.full_name}</p>
+                                    <label className="text-xs font-bold text-slate-650 uppercase tracking-wider block">Leader's Name *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={leaderName}
+                                        onChange={(e) => setLeaderName(e.target.value)}
+                                        placeholder="Full Name"
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
+                                        disabled={submitting}
+                                    />
                                 </div>
                             )}
 

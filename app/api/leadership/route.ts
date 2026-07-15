@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { userId, title, term, bio, priority } = body;
+        const { userId, title, term, bio, priority, fullName } = body;
 
         if (!userId || !title || !term) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
             term,
             bio,
             priority: priority ? parseInt(String(priority)) : 0,
+            fullName,
         });
 
         return NextResponse.json(newLeader, { status: 201 });
