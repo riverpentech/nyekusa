@@ -358,3 +358,54 @@ export async function deleteAlbumAction(id: string) {
         return { error: err.message || "Failed to delete gallery album." };
     }
 }
+
+export async function uploadAlbumCoverAction(formData: FormData) {
+    try {
+        await checkAdminAuth();
+
+        const file = formData.get("file") as File | null;
+        if (!file || file.size === 0) {
+            return { error: "Please select an image file to upload." };
+        }
+
+        // Validate file type
+        if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+            return { error: "Invalid file type. Supported types: JPEG, PNG, WEBP, GIF, AVIF." };
+        }
+
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+            return { error: "File is too large. Maximum size is 10MB." };
+        }
+
+        // Generate collision-free filename with prefix "album-previews/"
+        const originalExtension = file.name.split(".").pop() || "jpg";
+        const cleanName = file.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .slice(0, 30);
+        const uniqueId = Math.random().toString(36).substring(2, 8);
+        const fileName = `album-previews/cover_${Date.now()}_${uniqueId}_${cleanName}.${originalExtension}`;
+
+        // Convert file to buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Upload to Supabase Storage via S3 API
+        await s3Client.send(
+            new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: fileName,
+                Body: buffer,
+                ContentType: file.type,
+                CacheControl: "public, max-age=31536000",
+            })
+        );
+
+        const url = getPublicUrl(fileName);
+        return { success: true, url, fileName };
+    } catch (err: any) {
+        console.error("Error in uploadAlbumCoverAction:", err);
+        return { error: err.message || "Failed to upload cover image." };
+    }
+}

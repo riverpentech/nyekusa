@@ -31,7 +31,8 @@ import {
     deleteImageAction,
     createAlbumAction,
     updateAlbumAction,
-    deleteAlbumAction
+    deleteAlbumAction,
+    uploadAlbumCoverAction
 } from "@/actions/gallery";
 
 type GalleryImage = {
@@ -202,6 +203,135 @@ function ImageDropzone({
                     {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
                 </div>
             )}
+        </div>
+    );
+}
+
+function SmallAlbumCoverUpload({
+    coverUrl,
+    onUploadSuccess,
+    disabled
+}: {
+    coverUrl: string;
+    onUploadSuccess: (url: string) => void;
+    disabled?: boolean;
+}) {
+    const [isDragging, setIsDragging] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadedMeta, setUploadedMeta] = useState<{ name: string; size: string } | null>(null);
+
+    const handleFile = async (file: File) => {
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please drop or select an image file.");
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error("Image file size exceeds the 10MB limit.");
+            return;
+        }
+
+        setIsUploading(true);
+        setUploadProgress(10);
+        setUploadedMeta({
+            name: file.name,
+            size: (file.size / 1024 / 1024).toFixed(2) + " MB"
+        });
+
+        // Simulate upload progress bar growth
+        const interval = setInterval(() => {
+            setUploadProgress(prev => {
+                if (prev >= 90) {
+                    clearInterval(interval);
+                    return 90;
+                }
+                return prev + 15;
+            });
+        }, 150);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await uploadAlbumCoverAction(formData);
+
+            clearInterval(interval);
+            setUploadProgress(100);
+
+            if (res.error) {
+                toast.error(res.error);
+                setUploadedMeta(null);
+            } else if (res.url) {
+                toast.success("Cover image uploaded!");
+                onUploadSuccess(res.url);
+            }
+        } catch (err) {
+            clearInterval(interval);
+            console.error(err);
+            toast.error("Failed to upload image.");
+            setUploadedMeta(null);
+        } finally {
+            setTimeout(() => {
+                setIsUploading(false);
+                setUploadProgress(0);
+            }, 600);
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            <Label className="text-slate-700 font-medium text-xs block">Upload Custom Album Cover</Label>
+            
+            <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]); }}
+                className={`
+                    border border-dashed rounded-lg p-3 text-center cursor-pointer relative transition-all duration-200 flex flex-col items-center justify-center min-h-[90px]
+                    ${isDragging 
+                        ? "border-emerald-600 bg-emerald-50/30 shadow-[0_0_0_3px_rgba(16,185,129,0.15)] scale-[1.01]" 
+                        : "border-slate-200 hover:border-emerald-750/50 hover:bg-slate-50/50 hover:shadow-[0_0_0_3px_rgba(16,185,129,0.05)]"
+                    }
+                `}
+            >
+                <input
+                    type="file"
+                    accept="image/*"
+                    disabled={disabled || isUploading}
+                    onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+
+                {isUploading ? (
+                    <div className="w-full space-y-2 px-4 pointer-events-none">
+                        <Loader2 className="h-4 w-4 text-emerald-800 animate-spin mx-auto" />
+                        <p className="text-[11px] text-slate-500 font-medium">Uploading cover preview...</p>
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                                className="bg-emerald-600 h-1.5 rounded-full transition-all duration-300" 
+                                style={{ width: `${uploadProgress}%` }}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-3 w-full justify-center pointer-events-none px-2">
+                        {coverUrl ? (
+                            <div className="h-12 w-12 rounded border border-slate-200 overflow-hidden relative shrink-0">
+                                <img src={coverUrl} alt="Cover Preview" className="h-full w-full object-cover" />
+                            </div>
+                        ) : (
+                            <Upload className="h-5 w-5 text-slate-400 shrink-0" />
+                        )}
+                        <div className="text-left min-w-0">
+                            <p className="text-[11px] font-semibold text-slate-700 truncate">
+                                {uploadedMeta ? uploadedMeta.name : (coverUrl ? "Custom Cover Active" : "Click or drag cover here")}
+                            </p>
+                            <p className="text-[10px] text-slate-400 truncate">
+                                {uploadedMeta ? uploadedMeta.size : "JPEG, PNG, WEBP up to 10MB"}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -937,6 +1067,12 @@ export default function ImageManagementClient({ initialImages, initialAlbums }: 
                                     disabled={isPending}
                                 />
                             </div>
+
+                            <SmallAlbumCoverUpload
+                                coverUrl={albumCoverImage}
+                                onUploadSuccess={(url) => setAlbumCoverImage(url)}
+                                disabled={isPending}
+                            />
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="album-link" className="text-slate-700 font-medium">Google Photos Link *</Label>
