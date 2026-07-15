@@ -1,11 +1,22 @@
-import { Redis } from "@upstash/redis"
-import {Ratelimit} from "@upstash/ratelimit"
+// Simple in-memory rate limiter replacing Upstash Redis
+const map = new Map<string, number[]>();
 
-const redis = Redis.fromEnv()
+export const rateLimit = {
+  async limit(key: string) {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const max = 5;
 
-export const rateLimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(5, "15 m"),
-    analytics: true,
+    let timestamps = map.get(key) || [];
+    // Filter out expired timestamps
+    timestamps = timestamps.filter((t) => now - t < windowMs);
+    
+    if (timestamps.length >= max) {
+      return { success: false };
     }
-)
+    
+    timestamps.push(now);
+    map.set(key, timestamps);
+    return { success: true };
+  }
+};
