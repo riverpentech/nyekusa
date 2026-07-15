@@ -350,7 +350,7 @@ export default function Navbar() {
                                 {isAuthenticated && session?.user ? (
                                     <>
                                         <Link
-                                            href="/profile"
+                                            href="/dashboard/profile"
                                             className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors"
                                         >
                                             <Avatar fullName={session.user.name ?? "?"} photoUrl={session.user.image} size="sm" />
